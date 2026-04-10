@@ -11,8 +11,8 @@ pub mod version;
 pub mod tag;
 pub mod versioning;
 
-// Phase 3
-// pub mod changelog;  // P3.1-P3.2: Changelog generation
+// Phase 3: Changelog Generation
+pub mod changelog;
 
 // Phase 4
 // pub mod strategy;   // P4.*: Release strategies / file updaters

@@ -7,9 +7,9 @@ pub mod error;
 pub mod git;
 pub mod version;
 
-// Phase 2
-// pub mod versioning; // P2.1-P2.2: Versioning strategies
-// pub mod tag;        // P2.3: Tag name generation/parsing
+// Phase 2: Version Calculation
+pub mod tag;
+pub mod versioning;
 
 // Phase 3
 // pub mod changelog;  // P3.1-P3.2: Changelog generation

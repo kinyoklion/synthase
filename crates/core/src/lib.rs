@@ -1,12 +1,11 @@
 // rustlease-please: core library for automated release management
-//
-// Module stubs — these will be implemented in Phase 1+.
 
-// Phase 1
-// pub mod config;    // P1.1: Configuration parsing
-// pub mod commit;    // P1.2: Conventional commit parser
-// pub mod version;   // P1.3: Semver version handling
-// pub mod git;       // P1.4: Git history walking
+// Phase 1: Core Foundations
+pub mod commit;
+pub mod config;
+pub mod error;
+pub mod git;
+pub mod version;
 
 // Phase 2
 // pub mod versioning; // P2.1-P2.2: Versioning strategies
@@ -25,4 +24,4 @@
 // pub mod plugin;     // P6.*: Plugin system
 
 #[cfg(test)]
-mod testutil;
+pub(crate) mod testutil;

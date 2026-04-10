@@ -14,8 +14,9 @@ pub mod versioning;
 // Phase 3: Changelog Generation
 pub mod changelog;
 
-// Phase 4
-// pub mod strategy;   // P4.*: Release strategies / file updaters
+// Phase 4: Release Strategies / File Updaters
+pub mod strategy;
+pub mod updater;
 
 // Phase 5
 // pub mod manifest;   // P5.*: Monorepo orchestration

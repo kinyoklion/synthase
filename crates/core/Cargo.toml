@@ -1,0 +1,22 @@
+[package]
+name = "rustlease-please"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A Rust reimplementation of release-please for automated release management"
+
+[dependencies]
+git2 = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+semver = { workspace = true }
+regex = { workspace = true }
+toml = { workspace = true }
+chrono = { workspace = true }
+thiserror = { workspace = true }
+glob = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+pretty_assertions = { workspace = true }

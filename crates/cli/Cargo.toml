@@ -1,0 +1,16 @@
+[package]
+name = "rustlease-please-cli"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "CLI for rustlease-please automated release management"
+
+[[bin]]
+name = "rustlease-please"
+path = "src/main.rs"
+
+[dependencies]
+rustlease-please = { path = "../core" }
+clap = { workspace = true }
+serde_json = { workspace = true }

@@ -18,8 +18,8 @@ pub mod changelog;
 pub mod strategy;
 pub mod updater;
 
-// Phase 5
-// pub mod manifest;   // P5.*: Monorepo orchestration
+// Phase 5: Monorepo Orchestration
+pub mod manifest;
 
 // Phase 6
 // pub mod plugin;     // P6.*: Plugin system

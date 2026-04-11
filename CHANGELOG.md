@@ -6,6 +6,18 @@
 
 * unify action into single-workflow with immutable release support
 
+### Bug Fixes
+
+* create git tag for draft releases
+* move x-release-please-version annotation to same line as version
+* release-pr.sh must not overwrite releases_created output
+
+## [0.6.0](https://github.com/kinyoklion/rustlease-please/compare/rustlease-please-v0.5.0...rustlease-please-v0.6.0) (2026-04-11)
+
+### Features
+
+* unify action into single-workflow with immutable release support
+
 ## [0.5.0](https://github.com/kinyoklion/rustlease-please/compare/rustlease-please-v0.4.0...rustlease-please-v0.5.0) (2026-04-11)
 
 ### Features

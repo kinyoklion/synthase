@@ -12,7 +12,9 @@ permissions:
 jobs:
   # Step 1: Create a draft GitHub release with tag and release notes
   create-release:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'autorelease: pending')
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'autorelease: pending')
     runs-on: ubuntu-latest
     outputs:
       tag_name: ${{ steps.release.outputs.tag_name }}

@@ -1,0 +1,105 @@
+name: 'Rustlease Please'
+description: 'Automated release management — create release PRs and GitHub releases from conventional commits'
+author: 'rustlease-please'
+
+branding:
+  icon: 'package'
+  color: 'orange'
+
+inputs:
+  token:
+    description: 'GitHub token for API access. Needs contents:write and pull-requests:write permissions.'
+    required: false
+    default: ${{ github.token }}
+  command:
+    description: 'Command to run: "release-pr" to create/update release PRs, "release" to create GitHub releases from merged PRs.'
+    required: false
+    default: 'release-pr'
+  target-branch:
+    description: 'Branch to target for releases. Defaults to the repository default branch.'
+    required: false
+    default: ${{ github.event.repository.default_branch }}
+  config-file:
+    description: 'Path to release-please-config.json.'
+    required: false
+    default: 'release-please-config.json'
+  manifest-file:
+    description: 'Path to .release-please-manifest.json.'
+    required: false
+    default: '.release-please-manifest.json'
+  # Binary distribution
+  cli-version:
+    description: 'Version of rustlease-please CLI to use. Set to "build" to build from source.'
+    required: false
+    default: 'build'
+
+outputs:
+  releases_created:
+    description: 'Whether any releases were created (true/false).'
+    value: ${{ steps.run-command.outputs.releases_created }}
+  prs_created:
+    description: 'Whether any release PRs were created or updated (true/false).'
+    value: ${{ steps.run-command.outputs.prs_created }}
+  releases:
+    description: 'JSON array of release objects with version, tag, component info.'
+    value: ${{ steps.run-command.outputs.releases }}
+  pr_number:
+    description: 'The release PR number, if one was created or updated.'
+    value: ${{ steps.run-command.outputs.pr_number }}
+  tag_name:
+    description: 'Tag name of the first release (for single-package repos).'
+    value: ${{ steps.run-command.outputs.tag_name }}
+  version:
+    description: 'Version of the first release (for single-package repos).'
+    value: ${{ steps.run-command.outputs.version }}
+  major:
+    description: 'Major version component of the first release.'
+    value: ${{ steps.run-command.outputs.major }}
+  minor:
+    description: 'Minor version component of the first release.'
+    value: ${{ steps.run-command.outputs.minor }}
+  patch:
+    description: 'Patch version component of the first release.'
+    value: ${{ steps.run-command.outputs.patch }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Rust toolchain
+      if: inputs.cli-version == 'build'
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Build rustlease-please CLI
+      if: inputs.cli-version == 'build'
+      shell: bash
+      run: |
+        cd "${{ github.action_path }}/.."
+        cargo build --release
+        echo "RUSTLEASE_BIN=${{ github.action_path }}/../target/release/rustlease-please" >> "$GITHUB_ENV"
+
+    # TODO: Add download step for pre-built binaries when cli-version != 'build'
+    # - name: Download rustlease-please binary
+    #   if: inputs.cli-version != 'build'
+    #   shell: bash
+    #   run: |
+    #     ...download from releases...
+
+    - name: Run rustlease-please
+      id: run-command
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+        TARGET_BRANCH: ${{ inputs.target-branch }}
+        COMMAND: ${{ inputs.command }}
+        CONFIG_FILE: ${{ inputs.config-file }}
+        MANIFEST_FILE: ${{ inputs.manifest-file }}
+      run: |
+        if [ "$COMMAND" = "release-pr" ]; then
+          bash "${{ github.action_path }}/scripts/release-pr.sh"
+        elif [ "$COMMAND" = "release" ]; then
+          bash "${{ github.action_path }}/scripts/release.sh"
+        else
+          echo "::error::Unknown command: $COMMAND. Use 'release-pr' or 'release'."
+          exit 1
+        fi

@@ -100,6 +100,19 @@ echo "$CLI_OUTPUT" | jq -c '.releases[]' | while read -r release; do
     continue
   }
 
+  # For draft releases, GitHub does not create a git tag until the release
+  # is published. We must create the tag explicitly so the CLI can find the
+  # release boundary on subsequent runs.
+  if [ "$IS_DRAFT" = "true" ]; then
+    MERGE_SHA=$(gh api "repos/{owner}/{repo}/git/ref/heads/$TARGET_BRANCH" --jq '.object.sha' 2>/dev/null || true)
+    if [ -n "$MERGE_SHA" ]; then
+      gh api "repos/{owner}/{repo}/git/refs" \
+        -f ref="refs/tags/$TAG" \
+        -f sha="$MERGE_SHA" 2>/dev/null || echo "::warning::Tag $TAG may already exist"
+      echo "  Created git tag $TAG at $MERGE_SHA (for draft release)"
+    fi
+  fi
+
   RELEASE_URL=$(gh release view "$TAG" --json htmlUrl --jq '.htmlUrl' 2>/dev/null || echo "")
   echo "  Created: $RELEASE_URL"
 done

@@ -82,6 +82,9 @@ pub fn process_repo_with_config(
         ))
     })?;
 
+    // Extract owner/repo from git remote for changelog compare URLs
+    let (repo_owner, repo_name) = extract_github_owner_repo(&repo);
+
     let tags = git::find_tags(&repo)?;
 
     // Determine the earliest stop SHA across all packages
@@ -205,8 +208,8 @@ pub fn process_repo_with_config(
                 .changelog_host
                 .clone()
                 .unwrap_or_else(|| "https://github.com".to_string()),
-            owner: String::new(), // filled by caller or action layer
-            repository: String::new(),
+            owner: repo_owner.clone(),
+            repository: repo_name.clone(),
             changelog_sections: resolved.changelog_sections.clone(),
         };
 
@@ -245,6 +248,43 @@ pub fn process_repo_with_config(
         releases,
         manifest_update,
     })
+}
+
+/// Extract GitHub owner and repository name from the git remote URL.
+///
+/// Supports both SSH (`git@github.com:owner/repo.git`) and HTTPS
+/// (`https://github.com/owner/repo.git`) formats.
+fn extract_github_owner_repo(repo: &Repository) -> (String, String) {
+    let remote = match repo.find_remote("origin") {
+        Ok(r) => r,
+        Err(_) => return (String::new(), String::new()),
+    };
+    let url = match remote.url() {
+        Some(u) => u.to_string(),
+        None => return (String::new(), String::new()),
+    };
+
+    // SSH format: git@github.com:owner/repo.git
+    if let Some(rest) = url.strip_prefix("git@github.com:") {
+        let path = rest.trim_end_matches(".git");
+        if let Some((owner, repo_name)) = path.split_once('/') {
+            return (owner.to_string(), repo_name.to_string());
+        }
+    }
+
+    // HTTPS format: https://github.com/owner/repo.git
+    if url.contains("github.com/") {
+        let path = url
+            .split("github.com/")
+            .nth(1)
+            .unwrap_or("")
+            .trim_end_matches(".git");
+        if let Some((owner, repo_name)) = path.split_once('/') {
+            return (owner.to_string(), repo_name.to_string());
+        }
+    }
+
+    (String::new(), String::new())
 }
 
 /// Filter commits to only those after a given SHA.

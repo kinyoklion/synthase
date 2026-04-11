@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.0](https://github.com/kinyoklion/rustlease-please/compare/rustlease-please-v0.6.0...rustlease-please-v0.7.0) (2026-04-11)
+
+### Features
+
+* remove third-party GitHub Actions dependencies
+
 ## [0.6.0](https://github.com/kinyoklion/rustlease-please/compare/rustlease-please-v0.5.0...rustlease-please-v0.6.0) (2026-04-11)
 
 ### Features

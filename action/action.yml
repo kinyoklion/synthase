@@ -39,7 +39,7 @@ inputs:
   cli-version:
     description: 'Version of rustlease-please CLI to use. Set to "build" to build from source.'
     required: false
-    default: '0.6.0' # x-release-please-version
+    default: '0.7.0' # x-release-please-version
 
 outputs:
   releases_created:

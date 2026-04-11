@@ -5,6 +5,8 @@
 
 pub mod cargo_workspace;
 pub mod linked_versions;
+pub mod node_workspace;
+pub mod sentence_case;
 
 use std::collections::HashMap;
 use std::path::Path;
@@ -74,8 +76,10 @@ fn create_plugin_by_name(
 ) -> Option<Box<dyn Plugin>> {
     match name {
         "cargo-workspace" => Some(Box::new(cargo_workspace::CargoWorkspacePlugin::from_config(config))),
+        "node-workspace" => Some(Box::new(node_workspace::NodeWorkspacePlugin::from_config(config))),
         "linked-versions" => linked_versions::LinkedVersionsPlugin::from_config(config)
             .map(|p| Box::new(p) as Box<dyn Plugin>),
+        "sentence-case" => Some(Box::new(sentence_case::SentenceCasePlugin::from_config(config))),
         _ => None,
     }
 }

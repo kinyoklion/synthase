@@ -12,13 +12,22 @@ inputs:
     required: false
     default: ${{ github.token }}
   command:
-    description: 'Command to run: "release-pr" to create/update release PRs, "release" to create GitHub releases from merged PRs.'
+    description: |
+      Command to run:
+        "release" (default) — create draft releases for merged PRs, then create/update release PRs
+        "release-pr" — only create/update release PRs
+        "create-releases" — only create draft releases from merged PRs
+        "publish" — take draft releases out of draft (use with tag-name input)
     required: false
-    default: 'release-pr'
+    default: 'release'
   target-branch:
     description: 'Branch to target for releases. Defaults to the repository default branch.'
     required: false
     default: ${{ github.event.repository.default_branch }}
+  tag-name:
+    description: 'Tag name for the publish command. If not specified, publishes all draft releases.'
+    required: false
+    default: ''
   config-file:
     description: 'Path to release-please-config.json.'
     required: false
@@ -37,12 +46,18 @@ outputs:
   releases_created:
     description: 'Whether any releases were created (true/false).'
     value: ${{ steps.run-command.outputs.releases_created }}
+  release_created:
+    description: 'Whether a release was created for the root component (true/false).'
+    value: ${{ steps.run-command.outputs.release_created }}
   prs_created:
     description: 'Whether any release PRs were created or updated (true/false).'
     value: ${{ steps.run-command.outputs.prs_created }}
   releases:
     description: 'JSON array of release objects with version, tag, component info.'
     value: ${{ steps.run-command.outputs.releases }}
+  paths_released:
+    description: 'JSON array of paths that had releases created.'
+    value: ${{ steps.run-command.outputs.paths_released }}
   pr_number:
     description: 'The release PR number, if one was created or updated.'
     value: ${{ steps.run-command.outputs.pr_number }}
@@ -61,12 +76,18 @@ outputs:
   patch:
     description: 'Patch version component of the first release.'
     value: ${{ steps.run-command.outputs.patch }}
+  upload_url:
+    description: 'Upload URL for the first release.'
+    value: ${{ steps.run-command.outputs.upload_url }}
+  html_url:
+    description: 'HTML URL for the first release.'
+    value: ${{ steps.run-command.outputs.html_url }}
 
 runs:
   using: 'composite'
   steps:
     - name: Install rustlease-please CLI (from release)
-      if: inputs.cli-version != 'build'
+      if: inputs.cli-version != 'build' && inputs.command != 'publish'
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -87,11 +108,11 @@ runs:
         echo "Installed rustlease-please ${VERSION}"
 
     - name: Install Rust toolchain (build from source)
-      if: inputs.cli-version == 'build'
+      if: inputs.cli-version == 'build' && inputs.command != 'publish'
       uses: dtolnay/rust-toolchain@stable
 
     - name: Build rustlease-please CLI (from source)
-      if: inputs.cli-version == 'build'
+      if: inputs.cli-version == 'build' && inputs.command != 'publish'
       shell: bash
       run: |
         cd "${{ github.action_path }}/.."
@@ -106,14 +127,28 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
         TARGET_BRANCH: ${{ inputs.target-branch }}
         COMMAND: ${{ inputs.command }}
+        TAG_NAME: ${{ inputs.tag-name }}
         CONFIG_FILE: ${{ inputs.config-file }}
         MANIFEST_FILE: ${{ inputs.manifest-file }}
       run: |
-        if [ "$COMMAND" = "release-pr" ]; then
-          bash "${{ github.action_path }}/scripts/release-pr.sh"
-        elif [ "$COMMAND" = "release" ]; then
-          bash "${{ github.action_path }}/scripts/release.sh"
-        else
-          echo "::error::Unknown command: $COMMAND. Use 'release-pr' or 'release'."
-          exit 1
-        fi
+        case "$COMMAND" in
+          release)
+            # Phase 1: Create draft releases for merged PRs
+            bash "${{ github.action_path }}/scripts/create-releases.sh"
+            # Phase 2: Create/update release PRs (if Phase 1 didn't just tag something)
+            bash "${{ github.action_path }}/scripts/release-pr.sh"
+            ;;
+          release-pr)
+            bash "${{ github.action_path }}/scripts/release-pr.sh"
+            ;;
+          create-releases)
+            bash "${{ github.action_path }}/scripts/create-releases.sh"
+            ;;
+          publish)
+            bash "${{ github.action_path }}/scripts/publish.sh"
+            ;;
+          *)
+            echo "::error::Unknown command: $COMMAND. Use 'release', 'release-pr', 'create-releases', or 'publish'."
+            exit 1
+            ;;
+        esac

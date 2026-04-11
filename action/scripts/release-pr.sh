@@ -109,6 +109,11 @@ EXISTING_PR=$(gh pr list \
   --jq '.[0].number // empty' \
   2>/dev/null || true)
 
+# Ensure required labels exist (create if missing)
+for LABEL in "autorelease: pending" "autorelease: tagged"; do
+  gh label create "$LABEL" --color "ededed" --force 2>/dev/null || true
+done
+
 if [ -n "$EXISTING_PR" ]; then
   echo "Updating existing PR #$EXISTING_PR..."
   gh pr edit "$EXISTING_PR" \

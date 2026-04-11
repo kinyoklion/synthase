@@ -15,6 +15,7 @@ use crate::commit::{self, ConventionalCommit};
 use crate::config::{self, ManifestConfig, ResolvedConfig};
 use crate::error::{Error, Result};
 use crate::git::{self, GitCommit};
+use crate::plugin;
 use crate::strategy::{self, FileUpdate};
 use crate::tag::TagName;
 use crate::versioning;
@@ -237,6 +238,9 @@ pub fn process_repo_with_config(
             config: resolved,
         });
     }
+
+    // Run plugins (e.g., cargo-workspace for dependency cascading)
+    let releases = plugin::run_plugins(repo_path, releases, manifest_config, manifest_versions)?;
 
     // Build manifest update
     let manifest_update = build_manifest_update(manifest_versions, &releases)?;

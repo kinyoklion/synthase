@@ -21,8 +21,8 @@ pub mod updater;
 // Phase 5: Monorepo Orchestration
 pub mod manifest;
 
-// Phase 6
-// pub mod plugin;     // P6.*: Plugin system
+// Phase 6: Plugins
+pub mod plugin;
 
 #[cfg(any(test, feature = "testutil"))]
 pub mod testutil;

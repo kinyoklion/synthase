@@ -1,0 +1,10 @@
+{
+  "release-type": "rust",
+  "draft": true,
+  "packages": {
+    ".": {
+      "component": "rustlease-please",
+      "package-name": "rustlease-please"
+    }
+  }
+}

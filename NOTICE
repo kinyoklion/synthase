@@ -10,6 +10,6 @@ developed by Google Inc. and licensed under the Apache License 2.0.
   Licensed under the Apache License, Version 2.0
 
 The design, configuration format, and conventional commit processing logic
-in this project are based on the release-please project. This is an
-independent reimplementation in Rust and does not contain any source code
-from the original project.
+in this project are based on the release-please project. This is a
+reimplementation in Rust that used the original TypeScript source as
+reference.

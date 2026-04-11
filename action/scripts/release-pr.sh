@@ -9,34 +9,6 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
-# 0. Check for untagged merged release PRs — abort if any exist
-# ---------------------------------------------------------------------------
-# This matches release-please behavior: if a release PR has been merged but
-# not yet tagged (still has 'autorelease: pending'), we must not create a new
-# release PR. The 'release' command should run first to create the tag and
-# change the label to 'autorelease: tagged'.
-echo "::group::Checking for outstanding merged release PRs"
-PENDING_MERGED=$(gh pr list \
-  --base "$TARGET_BRANCH" \
-  --state merged \
-  --label "autorelease: pending" \
-  --json number \
-  --jq 'length' \
-  2>/dev/null || echo "0")
-
-if [ "$PENDING_MERGED" -gt 0 ]; then
-  echo "Found $PENDING_MERGED merged release PR(s) with 'autorelease: pending' label."
-  echo "Skipping — run the 'release' command first to tag these releases."
-  echo "releases_created=false" >> "$GITHUB_OUTPUT"
-  echo "prs_created=false" >> "$GITHUB_OUTPUT"
-  echo "releases=[]" >> "$GITHUB_OUTPUT"
-  echo "::endgroup::"
-  exit 0
-fi
-echo "No outstanding merged release PRs found — proceeding."
-echo "::endgroup::"
-
-# ---------------------------------------------------------------------------
 # 1. Run the CLI in dry-run mode to get the release plan
 # ---------------------------------------------------------------------------
 echo "::group::Running rustlease-please release-pr"
@@ -130,9 +102,19 @@ echo "::endgroup::"
 # ---------------------------------------------------------------------------
 # 4. Create or update the PR
 # ---------------------------------------------------------------------------
+# Matching release-please behavior:
+# - If an OPEN PR exists for this branch → always UPDATE it
+# - If no open PR exists, check for MERGED PRs with 'autorelease: pending'
+#   → if any exist, skip creation (the 'release' command should run first)
+# - Otherwise → CREATE a new PR
 echo "::group::Managing release PR"
 
-# Check for existing PR
+# Ensure required labels exist (create if missing)
+for LABEL in "autorelease: pending" "autorelease: tagged"; do
+  gh label create "$LABEL" --color "ededed" --force 2>/dev/null || true
+done
+
+# Check for existing open PR on this branch
 EXISTING_PR=$(gh pr list \
   --head "$PR_BRANCH" \
   --base "$TARGET_BRANCH" \
@@ -141,12 +123,8 @@ EXISTING_PR=$(gh pr list \
   --jq '.[0].number // empty' \
   2>/dev/null || true)
 
-# Ensure required labels exist (create if missing)
-for LABEL in "autorelease: pending" "autorelease: tagged"; do
-  gh label create "$LABEL" --color "ededed" --force 2>/dev/null || true
-done
-
 if [ -n "$EXISTING_PR" ]; then
+  # Update the existing open PR
   echo "Updating existing PR #$EXISTING_PR..."
   gh pr edit "$EXISTING_PR" \
     --title "$PR_TITLE" \
@@ -154,6 +132,26 @@ if [ -n "$EXISTING_PR" ]; then
   PR_NUMBER="$EXISTING_PR"
   echo "Updated PR #$PR_NUMBER"
 else
+  # No open PR — check if we should create one, or if a merged PR is pending release
+  PENDING_MERGED=$(gh pr list \
+    --base "$TARGET_BRANCH" \
+    --state merged \
+    --label "autorelease: pending" \
+    --json number \
+    --jq 'length' \
+    2>/dev/null || echo "0")
+
+  if [ "$PENDING_MERGED" -gt 0 ]; then
+    echo "Found $PENDING_MERGED merged release PR(s) with 'autorelease: pending' label."
+    echo "Skipping PR creation — run the 'release' command first to tag these releases."
+    echo "releases_created=false" >> "$GITHUB_OUTPUT"
+    echo "prs_created=false" >> "$GITHUB_OUTPUT"
+    echo "releases=[]" >> "$GITHUB_OUTPUT"
+    echo "::endgroup::"
+    git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout - 2>/dev/null || true
+    exit 0
+  fi
+
   echo "Creating new release PR..."
   PR_URL=$(gh pr create \
     --head "$PR_BRANCH" \
@@ -170,7 +168,7 @@ echo "::endgroup::"
 # ---------------------------------------------------------------------------
 # 5. Switch back to original branch
 # ---------------------------------------------------------------------------
-git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout -
+git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout - 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 6. Set outputs

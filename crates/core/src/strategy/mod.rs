@@ -1,10 +1,15 @@
 //! Release strategies — each knows which files to update for its ecosystem.
 
+mod bazel;
 mod dart;
+mod elixir;
 mod go;
 mod helm;
+mod java;
 mod node;
+mod php;
 mod python;
+mod ruby;
 mod rust;
 mod simple;
 
@@ -53,6 +58,11 @@ pub fn create_strategy(release_type: &str) -> Box<dyn ReleaseStrategy> {
         "go" => Box::new(go::GoStrategy),
         "helm" => Box::new(helm::HelmStrategy),
         "dart" => Box::new(dart::DartStrategy),
+        "java" | "maven" => Box::new(java::JavaStrategy),
+        "ruby" => Box::new(ruby::RubyStrategy),
+        "php" => Box::new(php::PhpStrategy),
+        "elixir" => Box::new(elixir::ElixirStrategy),
+        "bazel" => Box::new(bazel::BazelStrategy),
         _ => Box::new(simple::SimpleStrategy),
     }
 }

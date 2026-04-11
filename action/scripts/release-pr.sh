@@ -57,6 +57,10 @@ echo "::group::Applying file changes"
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+# Clean any working tree changes from the build step (e.g., Cargo.lock modified by cargo build)
+git checkout -- . 2>/dev/null || true
+git clean -fd 2>/dev/null || true
+
 # Check if the release branch already exists
 BRANCH_EXISTS=$(git ls-remote --heads origin "$PR_BRANCH" | wc -l)
 

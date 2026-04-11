@@ -5,7 +5,9 @@ use crate::config::ResolvedConfig;
 use crate::error::Result;
 use crate::updater;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Node/npm strategy: updates package.json, package-lock.json, and CHANGELOG.md.
 pub struct NodeStrategy;
@@ -45,8 +47,7 @@ impl ReleaseStrategy for NodeStrategy {
         let lock_full = repo_path.join(&lock_path);
         if lock_full.exists() {
             let content = std::fs::read_to_string(&lock_full)?;
-            let updated =
-                updater::update_package_lock_json_version(&content, &version_str);
+            let updated = updater::update_package_lock_json_version(&content, &version_str);
             updates.push(FileUpdate {
                 path: lock_path,
                 content: updated,
@@ -59,8 +60,7 @@ impl ReleaseStrategy for NodeStrategy {
         let shrinkwrap_full = repo_path.join(&shrinkwrap_path);
         if shrinkwrap_full.exists() {
             let content = std::fs::read_to_string(&shrinkwrap_full)?;
-            let updated =
-                updater::update_package_lock_json_version(&content, &version_str);
+            let updated = updater::update_package_lock_json_version(&content, &version_str);
             updates.push(FileUpdate {
                 path: shrinkwrap_path,
                 content: updated,
@@ -86,8 +86,10 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn node_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("node".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("node".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 

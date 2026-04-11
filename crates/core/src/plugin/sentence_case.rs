@@ -57,8 +57,7 @@ fn sentence_case_changelog(changelog: &str, special_words: &HashSet<String>) -> 
     let mut result = String::with_capacity(changelog.len());
 
     for line in changelog.lines() {
-        if line.starts_with("* ") {
-            let content = &line[2..];
+        if let Some(content) = line.strip_prefix("* ") {
             // Skip bold scope prefix if present: "**scope:** "
             if let Some(rest) = content.strip_prefix("**") {
                 if let Some(after_scope) = rest.find(":** ") {

@@ -178,7 +178,11 @@ pub struct ResolvedConfig {
 /// Load and parse `release-please-config.json` from disk.
 pub fn load_config(path: &Path) -> Result<ManifestConfig> {
     let content = std::fs::read_to_string(path).map_err(|e| {
-        Error::Config(format!("failed to read config file {}: {}", path.display(), e))
+        Error::Config(format!(
+            "failed to read config file {}: {}",
+            path.display(),
+            e
+        ))
     })?;
     let config: ManifestConfig = serde_json::from_str(&content)?;
     Ok(config)
@@ -206,7 +210,11 @@ pub fn resolve_config(defaults: &ReleaserConfig, package: &ReleaserConfig) -> Re
     // Helper: pick package value, then default value, then fallback
     macro_rules! resolve {
         ($field:ident, $fallback:expr) => {
-            package.$field.clone().or_else(|| defaults.$field.clone()).unwrap_or_else(|| $fallback)
+            package
+                .$field
+                .clone()
+                .or_else(|| defaults.$field.clone())
+                .unwrap_or_else(|| $fallback)
         };
     }
     macro_rules! resolve_bool {
@@ -492,7 +500,10 @@ mod tests {
             vec!["autorelease: pending", "bot"]
         );
         assert_eq!(parse_labels("single"), vec!["single"]);
-        assert_eq!(parse_labels("  spaced , labels  "), vec!["spaced", "labels"]);
+        assert_eq!(
+            parse_labels("  spaced , labels  "),
+            vec!["spaced", "labels"]
+        );
         assert!(parse_labels("").is_empty());
     }
 

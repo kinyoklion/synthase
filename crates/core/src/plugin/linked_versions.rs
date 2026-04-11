@@ -31,7 +31,10 @@ impl LinkedVersionsPlugin {
             return None;
         }
 
-        let merge = config.get("merge").and_then(|v| v.as_bool()).unwrap_or(true);
+        let merge = config
+            .get("merge")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
 
         Some(LinkedVersionsPlugin {
             group_name,
@@ -76,20 +79,18 @@ impl Plugin for LinkedVersionsPlugin {
             .into_iter()
             .map(|mut release| {
                 let component = release.component.as_deref().unwrap_or("");
-                if self.components.iter().any(|c| c == component) {
-                    if release.new_version < highest {
-                        release.new_version = highest.clone();
+                if self.components.iter().any(|c| c == component) && release.new_version < highest {
+                    release.new_version = highest.clone();
 
-                        // Update tag
-                        let tag = TagName::from_config(
-                            highest.clone(),
-                            release.component.clone(),
-                            release.config.include_component_in_tag,
-                            &release.config.tag_separator,
-                            release.config.include_v_in_tag,
-                        );
-                        release.tag = tag.to_string();
-                    }
+                    // Update tag
+                    let tag = TagName::from_config(
+                        highest.clone(),
+                        release.component.clone(),
+                        release.config.include_component_in_tag,
+                        &release.config.tag_separator,
+                        release.config.include_v_in_tag,
+                    );
+                    release.tag = tag.to_string();
                 }
                 release
             })
@@ -111,10 +112,10 @@ mod tests {
         );
         ComponentRelease {
             component: Some(component.to_string()),
-            package_path: format!("packages/{}", component),
+            package_path: format!("packages/{component}"),
             current_version: Some(Version::new(1, 0, 0)),
             new_version: Version::parse(version).unwrap(),
-            tag: format!("{}-v{}", component, version),
+            tag: format!("{component}-v{version}"),
             changelog_entry: String::new(),
             file_updates: vec![],
             config: resolved,
@@ -130,8 +131,8 @@ mod tests {
         };
 
         let releases = vec![
-            make_release("a", "1.1.0"),  // minor bump
-            make_release("b", "1.0.1"),  // patch bump
+            make_release("a", "1.1.0"), // minor bump
+            make_release("b", "1.0.1"), // patch bump
         ];
 
         let result = plugin
@@ -152,10 +153,7 @@ mod tests {
             merge: false,
         };
 
-        let releases = vec![
-            make_release("a", "1.1.0"),
-            make_release("b", "1.1.0"),
-        ];
+        let releases = vec![make_release("a", "1.1.0"), make_release("b", "1.1.0")];
 
         let result = plugin
             .run(Path::new("."), releases, &minimal_config(), &HashMap::new())
@@ -176,7 +174,7 @@ mod tests {
         let releases = vec![
             make_release("a", "1.1.0"),
             make_release("b", "1.0.1"),
-            make_release("c", "3.0.0"),  // not in group
+            make_release("c", "3.0.0"), // not in group
         ];
 
         let result = plugin

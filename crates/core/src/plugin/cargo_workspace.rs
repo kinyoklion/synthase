@@ -70,9 +70,10 @@ impl Plugin for CargoWorkspacePlugin {
         let ordered = topological_sort(&crates);
 
         for crate_info in &ordered {
-            let needs_cascade = crate_info.workspace_deps.iter().any(|dep| {
-                updated_versions.contains_key(dep) || cascade_needed.contains_key(dep)
-            });
+            let needs_cascade = crate_info
+                .workspace_deps
+                .iter()
+                .any(|dep| updated_versions.contains_key(dep) || cascade_needed.contains_key(dep));
 
             if needs_cascade && !updated_versions.contains_key(&crate_info.name) {
                 // This crate needs a cascade bump
@@ -126,10 +127,15 @@ fn parse_workspace(repo_path: &Path) -> Result<Vec<CrateInfo>> {
     }
 
     let root_content = std::fs::read_to_string(&root_toml_path)?;
-    let root: toml::Value = toml::from_str(&root_content)
-        .map_err(|e| crate::error::Error::Config(format!("failed to parse root Cargo.toml: {}", e)))?;
+    let root: toml::Value = toml::from_str(&root_content).map_err(|e| {
+        crate::error::Error::Config(format!("failed to parse root Cargo.toml: {e}"))
+    })?;
 
-    let members = match root.get("workspace").and_then(|w| w.get("members")).and_then(|m| m.as_array()) {
+    let members = match root
+        .get("workspace")
+        .and_then(|w| w.get("members"))
+        .and_then(|m| m.as_array())
+    {
         Some(m) => m,
         None => return Ok(Vec::new()), // Not a workspace
     };
@@ -209,8 +215,9 @@ fn parse_member_crate(repo_path: &Path, member_path: &str) -> Result<Option<Crat
     }
 
     let content = std::fs::read_to_string(&toml_path)?;
-    let parsed: toml::Value = toml::from_str(&content)
-        .map_err(|e| crate::error::Error::Config(format!("failed to parse {}: {}", toml_path.display(), e)))?;
+    let parsed: toml::Value = toml::from_str(&content).map_err(|e| {
+        crate::error::Error::Config(format!("failed to parse {}: {}", toml_path.display(), e))
+    })?;
 
     let name = parsed
         .get("package")
@@ -257,10 +264,7 @@ fn collect_dep_names(parent: &toml::Value, section: &str, out: &mut Vec<String>)
     if let Some(deps) = parent.get(section).and_then(|d| d.as_table()) {
         for (name, dep_val) in deps {
             // Only include deps that have a `path` field (workspace deps)
-            let has_path = dep_val
-                .as_table()
-                .and_then(|t| t.get("path"))
-                .is_some();
+            let has_path = dep_val.as_table().and_then(|t| t.get("path")).is_some();
             if has_path {
                 out.push(name.clone());
             }
@@ -270,8 +274,7 @@ fn collect_dep_names(parent: &toml::Value, section: &str, out: &mut Vec<String>)
 
 /// Topological sort of crates (dependencies first).
 fn topological_sort(crates: &[CrateInfo]) -> Vec<&CrateInfo> {
-    let by_name: HashMap<&str, &CrateInfo> =
-        crates.iter().map(|c| (c.name.as_str(), c)).collect();
+    let by_name: HashMap<&str, &CrateInfo> = crates.iter().map(|c| (c.name.as_str(), c)).collect();
 
     let mut visited = HashSet::new();
     let mut order = Vec::new();
@@ -324,10 +327,7 @@ fn update_cargo_toml_deps_in_release(
 }
 
 /// Update dependency version strings in a Cargo.toml content string.
-fn update_cargo_deps_in_toml(
-    content: &str,
-    versions: &HashMap<String, Version>,
-) -> String {
+fn update_cargo_deps_in_toml(content: &str, versions: &HashMap<String, Version>) -> String {
     let mut result = content.to_string();
 
     // Parse the TOML to find dependency sections
@@ -344,7 +344,10 @@ fn update_cargo_deps_in_toml(
                     if let Some(table) = dep_val.as_table() {
                         if table.contains_key("path") && table.contains_key("version") {
                             result = update_dep_version_in_section(
-                                &result, section, dep_name, &new_ver.to_string(),
+                                &result,
+                                section,
+                                dep_name,
+                                &new_ver.to_string(),
                             );
                         }
                     }
@@ -409,7 +412,8 @@ fn create_cascade_release(
     }
 
     let cargo_content = std::fs::read_to_string(&cargo_full)?;
-    let updated_cargo = updater::update_cargo_toml_version(&cargo_content, &new_version.to_string());
+    let updated_cargo =
+        updater::update_cargo_toml_version(&cargo_content, &new_version.to_string());
     let updated_cargo = update_cargo_deps_in_toml(&updated_cargo, all_versions);
 
     // Generate a simple changelog entry for the dependency update
@@ -570,21 +574,38 @@ version = "1.0.0"
         repo.add_and_commit("feat: b feature");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
-        let output = crate::manifest::process_repo_with_config(repo.path(), &config, &manifest).unwrap();
+        let output =
+            crate::manifest::process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
         // crate-b should have minor bump (feat)
-        let b_rel = output.releases.iter().find(|r| r.component.as_deref() == Some("crate-b")).unwrap();
+        let b_rel = output
+            .releases
+            .iter()
+            .find(|r| r.component.as_deref() == Some("crate-b"))
+            .unwrap();
         assert_eq!(b_rel.new_version, Version::new(1, 1, 0));
 
         // crate-a should have cascade patch bump (depends on crate-b)
-        let a_rel = output.releases.iter().find(|r| r.component.as_deref() == Some("crate-a")).unwrap();
+        let a_rel = output
+            .releases
+            .iter()
+            .find(|r| r.component.as_deref() == Some("crate-a"))
+            .unwrap();
         assert_eq!(a_rel.new_version, Version::new(1, 0, 1));
 
         // crate-a's Cargo.toml should have updated dep version
-        let a_cargo = a_rel.file_updates.iter().find(|u| u.path.contains("Cargo.toml")).unwrap();
-        assert!(a_cargo.content.contains("version = \"1.0.1\"") || a_cargo.content.contains("version = \"1.1.0\""));
+        let a_cargo = a_rel
+            .file_updates
+            .iter()
+            .find(|u| u.path.contains("Cargo.toml"))
+            .unwrap();
+        assert!(
+            a_cargo.content.contains("version = \"1.0.1\"")
+                || a_cargo.content.contains("version = \"1.1.0\"")
+        );
     }
 
     #[test]

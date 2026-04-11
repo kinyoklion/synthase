@@ -76,7 +76,7 @@ fn join_pkg_path(pkg_path: &str, file_path: &str) -> String {
     if pkg_path == "." {
         file_path.to_string()
     } else {
-        format!("{}/{}", pkg_path, file_path)
+        format!("{pkg_path}/{file_path}")
     }
 }
 

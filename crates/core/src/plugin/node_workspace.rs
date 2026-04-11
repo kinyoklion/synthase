@@ -32,7 +32,10 @@ pub struct NodeWorkspacePlugin {
 
 impl NodeWorkspacePlugin {
     pub fn from_config(config: &serde_json::Value) -> Self {
-        let merge = config.get("merge").and_then(|v| v.as_bool()).unwrap_or(true);
+        let merge = config
+            .get("merge")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
         let update_peer = config
             .get("updatePeerDependencies")
             .and_then(|v| v.as_bool())
@@ -71,9 +74,10 @@ impl Plugin for NodeWorkspacePlugin {
         // Find packages needing cascade bumps
         let mut cascade_needed: HashMap<String, Version> = HashMap::new();
         for pkg in &packages {
-            let needs_cascade = pkg.workspace_deps.iter().any(|dep| {
-                updated_versions.contains_key(dep) || cascade_needed.contains_key(dep)
-            });
+            let needs_cascade = pkg
+                .workspace_deps
+                .iter()
+                .any(|dep| updated_versions.contains_key(dep) || cascade_needed.contains_key(dep));
             if needs_cascade && !updated_versions.contains_key(&pkg.name) {
                 let new_version = version::bump(&pkg.version, version::BumpType::Patch);
                 cascade_needed.insert(pkg.name.clone(), new_version);
@@ -118,7 +122,6 @@ impl Plugin for NodeWorkspacePlugin {
 /// Parse npm workspace members from package.json files.
 fn parse_workspace(repo_path: &Path, manifest_config: &ManifestConfig) -> Result<Vec<PackageInfo>> {
     let mut packages = Vec::new();
-    let all_names: HashSet<String> = HashSet::new();
 
     // Collect packages from the manifest config paths
     for pkg_path in manifest_config.packages.keys() {
@@ -138,8 +141,15 @@ fn parse_workspace(repo_path: &Path, manifest_config: &ManifestConfig) -> Result
             Err(_) => continue,
         };
 
-        let name = parsed.get("name").and_then(|n| n.as_str()).unwrap_or("").to_string();
-        let version_str = parsed.get("version").and_then(|v| v.as_str()).unwrap_or("0.0.0");
+        let name = parsed
+            .get("name")
+            .and_then(|n| n.as_str())
+            .unwrap_or("")
+            .to_string();
+        let version_str = parsed
+            .get("version")
+            .and_then(|v| v.as_str())
+            .unwrap_or("0.0.0");
         let version = Version::parse(version_str).unwrap_or_else(|_| Version::new(0, 0, 0));
 
         // Collect dependency names
@@ -180,16 +190,20 @@ fn update_package_json_deps(
         if update.path.ends_with("package.json") {
             if let Ok(mut parsed) = serde_json::from_str::<serde_json::Value>(&update.content) {
                 let mut changed = false;
-                for section in &["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"] {
+                for section in &[
+                    "dependencies",
+                    "devDependencies",
+                    "optionalDependencies",
+                    "peerDependencies",
+                ] {
                     if let Some(deps) = parsed.get_mut(section).and_then(|d| d.as_object_mut()) {
                         for (dep_name, dep_val) in deps.iter_mut() {
                             if let Some(new_ver) = all_versions.get(dep_name) {
                                 if let Some(current) = dep_val.as_str() {
                                     // Preserve version range prefix (^, ~, >=, etc.)
                                     let prefix = extract_range_prefix(current);
-                                    *dep_val = serde_json::Value::String(
-                                        format!("{}{}", prefix, new_ver),
-                                    );
+                                    *dep_val =
+                                        serde_json::Value::String(format!("{prefix}{new_ver}"));
                                     changed = true;
                                 }
                             }
@@ -217,14 +231,23 @@ fn update_package_json_deps(
 
 /// Extract the version range prefix from a semver range string.
 fn extract_range_prefix(range: &str) -> &str {
-    if range.starts_with(">=") { ">=" }
-    else if range.starts_with("<=") { "<=" }
-    else if range.starts_with('^') { "^" }
-    else if range.starts_with('~') { "~" }
-    else if range.starts_with('>') { ">" }
-    else if range.starts_with('<') { "<" }
-    else if range.starts_with('=') { "=" }
-    else { "" }
+    if range.starts_with(">=") {
+        ">="
+    } else if range.starts_with("<=") {
+        "<="
+    } else if range.starts_with('^') {
+        "^"
+    } else if range.starts_with('~') {
+        "~"
+    } else if range.starts_with('>') {
+        ">"
+    } else if range.starts_with('<') {
+        "<"
+    } else if range.starts_with('=') {
+        "="
+    } else {
+        ""
+    }
 }
 
 fn detect_indent(content: &str) -> String {
@@ -262,7 +285,7 @@ fn create_cascade_release(
     pkg: &PackageInfo,
     new_version: &Version,
     repo_path: &Path,
-    all_versions: &HashMap<String, Version>,
+    _all_versions: &HashMap<String, Version>,
     manifest_config: &ManifestConfig,
 ) -> Result<Option<ComponentRelease>> {
     let pkg_config = manifest_config
@@ -372,9 +395,10 @@ mod tests {
 
         let mut cascade_needed: HashMap<String, Version> = HashMap::new();
         for pkg in &packages {
-            let needs_cascade = pkg.workspace_deps.iter().any(|dep| {
-                updated_versions.contains_key(dep)
-            });
+            let needs_cascade = pkg
+                .workspace_deps
+                .iter()
+                .any(|dep| updated_versions.contains_key(dep));
             if needs_cascade && !updated_versions.contains_key(&pkg.name) {
                 let new_ver = version::bump(&pkg.version, version::BumpType::Patch);
                 cascade_needed.insert(pkg.name.clone(), new_ver);

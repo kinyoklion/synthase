@@ -125,7 +125,7 @@ fn parse_tag(repo: &Repository, name: &str) -> Result<Option<ReleaseTag>> {
     };
 
     // Resolve the tag to a commit SHA
-    let reference = repo.find_reference(&format!("refs/tags/{}", name))?;
+    let reference = repo.find_reference(&format!("refs/tags/{name}"))?;
     let commit = reference.peel_to_commit()?;
 
     Ok(Some(ReleaseTag {
@@ -148,7 +148,7 @@ pub fn split_commits_by_path<'a>(
 ) -> HashMap<String, Vec<&'a GitCommit>> {
     // Sort paths longest-first for greedy matching
     let mut sorted_paths: Vec<&str> = paths.to_vec();
-    sorted_paths.sort_by(|a, b| b.len().cmp(&a.len()));
+    sorted_paths.sort_by_key(|b| std::cmp::Reverse(b.len()));
 
     let mut result: HashMap<String, Vec<&GitCommit>> = HashMap::new();
     for path in paths {
@@ -168,7 +168,7 @@ pub fn split_commits_by_path<'a>(
                 let prefix = if path.ends_with('/') {
                     path.to_string()
                 } else {
-                    format!("{}/", path)
+                    format!("{path}/")
                 };
                 if file.starts_with(&prefix) || file == *path {
                     matched_paths.insert(path.to_string());
@@ -443,10 +443,7 @@ mod tests {
 
         let tags = find_tags(test_repo.repo()).unwrap();
         assert_eq!(tags.len(), 1);
-        assert_eq!(
-            *tags[0].version(),
-            Version::parse("1.0.0-alpha.1").unwrap()
-        );
+        assert_eq!(*tags[0].version(), Version::parse("1.0.0-alpha.1").unwrap());
     }
 
     #[test]

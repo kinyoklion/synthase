@@ -6,15 +6,16 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Elixir strategy: updates mix.exs version and CHANGELOG.md.
 pub struct ElixirStrategy;
 
 /// Matches version in mix.exs: version: "1.0.0"
-static MIX_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(version:\s*")([^"]+)(")"#).unwrap()
-});
+static MIX_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(version:\s*")([^"]+)(")"#).unwrap());
 
 impl ReleaseStrategy for ElixirStrategy {
     fn build_updates(
@@ -48,7 +49,12 @@ impl ReleaseStrategy for ElixirStrategy {
             });
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -60,8 +66,10 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn elixir_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("elixir".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("elixir".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
@@ -71,9 +79,15 @@ mod tests {
         repo.write_file("mix.exs", "defmodule MyApp.MixProject do\n  def project do\n    [\n      app: :my_app,\n      version: \"1.0.0\",\n      elixir: \"~> 1.14\"\n    ]\n  end\nend\n");
 
         let strategy = ElixirStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n", &elixir_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n",
+                &elixir_config(),
+            )
+            .unwrap();
 
         let mix = updates.iter().find(|u| u.path == "mix.exs").unwrap();
         assert!(mix.content.contains("version: \"1.1.0\""));

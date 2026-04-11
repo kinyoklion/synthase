@@ -52,14 +52,12 @@ static FOOTER_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(?P<key>[A-Za-z][A-Za-z0-9 -]*)(?::\s*| #)(?P<value>.*)$").unwrap()
 });
 
-static ISSUE_REF_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"#(?P<number>\d+)").unwrap());
+static ISSUE_REF_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"#(?P<number>\d+)").unwrap());
 
 static BREAKING_FOOTER_KEY: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)^BREAKING[- ]CHANGE$").unwrap());
 
-static RELEASE_AS_KEY: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)^Release-As$").unwrap());
+static RELEASE_AS_KEY: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)^Release-As$").unwrap());
 
 /// Parse a git commit message as a conventional commit.
 ///
@@ -102,8 +100,8 @@ pub fn parse_conventional_commit(sha: &str, message: &str) -> Option<Conventiona
                 {
                     breaking = true;
                     let desc = trimmed
-                        .splitn(2, ':')
-                        .nth(1)
+                        .split_once(':')
+                        .map(|x| x.1)
                         .map(|s| s.trim().to_string())
                         .filter(|s| !s.is_empty());
                     if breaking_description.is_none() {
@@ -118,7 +116,7 @@ pub fn parse_conventional_commit(sha: &str, message: &str) -> Option<Conventiona
     let release_as = footers
         .iter()
         .filter(|f| RELEASE_AS_KEY.is_match(&f.key))
-        .last()
+        .next_back()
         .map(|f| f.value.trim().to_string());
 
     // Extract issue references from subject, body, and footers
@@ -146,9 +144,9 @@ pub fn parse_conventional_commit(sha: &str, message: &str) -> Option<Conventiona
         if is_action_footer {
             if let Ok(number) = footer.value.trim().parse::<u64>() {
                 // Only add if not already captured by the #N extraction above
-                let already_found = references.iter().any(|r| {
-                    r.number == number && r.action.as_deref() == action.as_deref()
-                });
+                let already_found = references
+                    .iter()
+                    .any(|r| r.number == number && r.action.as_deref() == action.as_deref());
                 if !already_found {
                     references.push(IssueReference {
                         prefix: "#".to_string(),
@@ -255,11 +253,7 @@ fn parse_body_and_footers(body_text: Option<&str>) -> (Option<String>, Vec<Foote
 }
 
 /// Extract `#N` references from text.
-fn extract_issue_refs(
-    text: &str,
-    action: Option<String>,
-    refs: &mut Vec<IssueReference>,
-) {
+fn extract_issue_refs(text: &str, action: Option<String>, refs: &mut Vec<IssueReference>) {
     for caps in ISSUE_REF_RE.captures_iter(text) {
         if let Ok(number) = caps["number"].parse::<u64>() {
             refs.push(IssueReference {
@@ -277,8 +271,7 @@ mod tests {
 
     #[test]
     fn test_simple_feat() {
-        let commit =
-            parse_conventional_commit("abc123", "feat: add new feature").unwrap();
+        let commit = parse_conventional_commit("abc123", "feat: add new feature").unwrap();
         assert_eq!(commit.commit_type, "feat");
         assert_eq!(commit.scope, None);
         assert_eq!(commit.subject, "add new feature");
@@ -289,8 +282,7 @@ mod tests {
 
     #[test]
     fn test_fix_with_scope() {
-        let commit =
-            parse_conventional_commit("abc123", "fix(auth): resolve login crash").unwrap();
+        let commit = parse_conventional_commit("abc123", "fix(auth): resolve login crash").unwrap();
         assert_eq!(commit.commit_type, "fix");
         assert_eq!(commit.scope.as_deref(), Some("auth"));
         assert_eq!(commit.subject, "resolve login crash");
@@ -298,8 +290,7 @@ mod tests {
 
     #[test]
     fn test_breaking_with_bang() {
-        let commit =
-            parse_conventional_commit("abc123", "feat!: redesign API").unwrap();
+        let commit = parse_conventional_commit("abc123", "feat!: redesign API").unwrap();
         assert!(commit.breaking);
         assert_eq!(commit.commit_type, "feat");
     }
@@ -307,8 +298,7 @@ mod tests {
     #[test]
     fn test_breaking_with_scope_and_bang() {
         let commit =
-            parse_conventional_commit("abc123", "feat(api)!: remove old endpoints")
-                .unwrap();
+            parse_conventional_commit("abc123", "feat(api)!: remove old endpoints").unwrap();
         assert!(commit.breaking);
         assert_eq!(commit.scope.as_deref(), Some("api"));
     }
@@ -356,8 +346,7 @@ mod tests {
 
     #[test]
     fn test_issue_references_in_subject() {
-        let commit =
-            parse_conventional_commit("abc123", "fix: resolve crash (#42)").unwrap();
+        let commit = parse_conventional_commit("abc123", "fix: resolve crash (#42)").unwrap();
         assert_eq!(commit.references.len(), 1);
         assert_eq!(commit.references[0].number, 42);
         assert_eq!(commit.references[0].action, None);
@@ -399,26 +388,26 @@ mod tests {
     #[test]
     fn test_all_standard_types() {
         for t in &[
-            "feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci",
-            "chore", "revert",
+            "feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore",
+            "revert",
         ] {
-            let msg = format!("{}: do something", t);
+            let msg = format!("{t}: do something");
             let commit = parse_conventional_commit("sha", &msg);
-            assert!(commit.is_some(), "should parse type: {}", t);
+            assert!(commit.is_some(), "should parse type: {t}");
             assert_eq!(commit.unwrap().commit_type, *t);
         }
     }
 
     #[test]
     fn test_empty_scope() {
-        let commit =
-            parse_conventional_commit("abc123", "feat(): empty scope").unwrap();
+        let commit = parse_conventional_commit("abc123", "feat(): empty scope").unwrap();
         assert_eq!(commit.scope.as_deref(), Some(""));
     }
 
     #[test]
     fn test_multiple_issue_references() {
-        let msg = "fix: resolve crashes (#1, #2)\n\nSome body text about #3.\n\nFixes: #4\nCloses: #5";
+        let msg =
+            "fix: resolve crashes (#1, #2)\n\nSome body text about #3.\n\nFixes: #4\nCloses: #5";
         let commit = parse_conventional_commit("abc123", msg).unwrap();
         let numbers: Vec<u64> = commit.references.iter().map(|r| r.number).collect();
         assert!(numbers.contains(&1), "subject ref #1");
@@ -438,8 +427,7 @@ mod tests {
 
     #[test]
     fn test_breaking_change_in_body_text() {
-        let msg =
-            "feat: something\n\nSome context.\nBREAKING CHANGE: this is breaking";
+        let msg = "feat: something\n\nSome context.\nBREAKING CHANGE: this is breaking";
         let commit = parse_conventional_commit("abc123", msg).unwrap();
         assert!(commit.breaking);
         assert_eq!(

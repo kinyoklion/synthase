@@ -70,16 +70,19 @@ fn create_plugins(config: &ManifestConfig) -> Vec<Box<dyn Plugin>> {
     plugins
 }
 
-fn create_plugin_by_name(
-    name: &str,
-    config: &serde_json::Value,
-) -> Option<Box<dyn Plugin>> {
+fn create_plugin_by_name(name: &str, config: &serde_json::Value) -> Option<Box<dyn Plugin>> {
     match name {
-        "cargo-workspace" => Some(Box::new(cargo_workspace::CargoWorkspacePlugin::from_config(config))),
-        "node-workspace" => Some(Box::new(node_workspace::NodeWorkspacePlugin::from_config(config))),
+        "cargo-workspace" => Some(Box::new(
+            cargo_workspace::CargoWorkspacePlugin::from_config(config),
+        )),
+        "node-workspace" => Some(Box::new(node_workspace::NodeWorkspacePlugin::from_config(
+            config,
+        ))),
         "linked-versions" => linked_versions::LinkedVersionsPlugin::from_config(config)
             .map(|p| Box::new(p) as Box<dyn Plugin>),
-        "sentence-case" => Some(Box::new(sentence_case::SentenceCasePlugin::from_config(config))),
+        "sentence-case" => Some(Box::new(sentence_case::SentenceCasePlugin::from_config(
+            config,
+        ))),
         _ => None,
     }
 }
@@ -90,18 +93,16 @@ mod tests {
 
     #[test]
     fn test_create_plugins_empty() {
-        let config: ManifestConfig =
-            serde_json::from_str(r#"{"packages": {".": {}}}"#).unwrap();
+        let config: ManifestConfig = serde_json::from_str(r#"{"packages": {".": {}}}"#).unwrap();
         let plugins = create_plugins(&config);
         assert!(plugins.is_empty());
     }
 
     #[test]
     fn test_create_plugins_cargo_workspace() {
-        let config: ManifestConfig = serde_json::from_str(
-            r#"{"packages": {".": {}}, "plugins": ["cargo-workspace"]}"#,
-        )
-        .unwrap();
+        let config: ManifestConfig =
+            serde_json::from_str(r#"{"packages": {".": {}}, "plugins": ["cargo-workspace"]}"#)
+                .unwrap();
         let plugins = create_plugins(&config);
         assert_eq!(plugins.len(), 1);
     }
@@ -118,10 +119,8 @@ mod tests {
 
     #[test]
     fn test_create_plugins_unknown_ignored() {
-        let config: ManifestConfig = serde_json::from_str(
-            r#"{"packages": {".": {}}, "plugins": ["nonexistent"]}"#,
-        )
-        .unwrap();
+        let config: ManifestConfig =
+            serde_json::from_str(r#"{"packages": {".": {}}, "plugins": ["nonexistent"]}"#).unwrap();
         let plugins = create_plugins(&config);
         assert!(plugins.is_empty());
     }

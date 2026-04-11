@@ -24,7 +24,12 @@ impl ReleaseStrategy for GoStrategy {
             updates.push(cl);
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -36,8 +41,10 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn go_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("go".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("go".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
@@ -47,9 +54,15 @@ mod tests {
         repo.write_file("go.mod", "module example.com/mymod\n\ngo 1.21\n");
 
         let strategy = GoStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n\n### Features\n\n* thing\n", &go_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n\n### Features\n\n* thing\n",
+                &go_config(),
+            )
+            .unwrap();
 
         // Only changelog, no go.mod update (version comes from tags)
         assert!(updates.iter().any(|u| u.path == "CHANGELOG.md"));

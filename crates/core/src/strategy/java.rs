@@ -6,16 +6,17 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Java/Maven strategy: updates pom.xml version and CHANGELOG.md.
 pub struct JavaStrategy;
 
 /// Matches the first `<version>x.y.z</version>` in a pom.xml.
 /// This targets the project version (usually the first <version> element).
-static POM_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(<version>)([^<]+)(</version>)").unwrap()
-});
+static POM_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(<version>)([^<]+)(</version>)").unwrap());
 
 impl ReleaseStrategy for JavaStrategy {
     fn build_updates(
@@ -51,7 +52,12 @@ impl ReleaseStrategy for JavaStrategy {
             });
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -63,15 +69,19 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn java_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("java".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("java".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
     #[test]
     fn test_java_pom_xml() {
         let repo = TestRepo::new();
-        repo.write_file("pom.xml", r#"<?xml version="1.0"?>
+        repo.write_file(
+            "pom.xml",
+            r#"<?xml version="1.0"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.example</groupId>
@@ -85,12 +95,19 @@ mod tests {
     </dependency>
   </dependencies>
 </project>
-"#);
+"#,
+        );
 
         let strategy = JavaStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n", &java_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n",
+                &java_config(),
+            )
+            .unwrap();
 
         let pom = updates.iter().find(|u| u.path == "pom.xml").unwrap();
         // Project version updated

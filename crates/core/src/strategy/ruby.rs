@@ -6,15 +6,14 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{build_changelog_update, build_extra_file_updates, FileUpdate, ReleaseStrategy};
 
 /// Ruby strategy: updates version.rb and CHANGELOG.md.
 pub struct RubyStrategy;
 
 /// Matches version strings in Ruby files: VERSION = "1.0.0" or version = '1.0.0'
-static RUBY_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(["'])(\d+\.\d+\.\d+[^"']*)(["'])"#).unwrap()
-});
+static RUBY_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(["'])(\d+\.\d+\.\d+[^"']*)(["'])"#).unwrap());
 
 impl ReleaseStrategy for RubyStrategy {
     fn build_updates(
@@ -33,7 +32,10 @@ impl ReleaseStrategy for RubyStrategy {
         }
 
         // Look for lib/**/version.rb or version file from config
-        let version_file = config.version_file.as_deref().unwrap_or("lib/**/version.rb");
+        let version_file = config
+            .version_file
+            .as_deref()
+            .unwrap_or("lib/**/version.rb");
         let full_pattern = if pkg_path == "." {
             repo_path.join(version_file)
         } else {
@@ -65,7 +67,12 @@ impl ReleaseStrategy for RubyStrategy {
             }
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -77,22 +84,36 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn ruby_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("ruby".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("ruby".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
     #[test]
     fn test_ruby_version_rb() {
         let repo = TestRepo::new();
-        repo.write_file("lib/my_gem/version.rb", "module MyGem\n  VERSION = \"1.0.0\"\nend\n");
+        repo.write_file(
+            "lib/my_gem/version.rb",
+            "module MyGem\n  VERSION = \"1.0.0\"\nend\n",
+        );
 
         let strategy = RubyStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n", &ruby_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n",
+                &ruby_config(),
+            )
+            .unwrap();
 
-        let version_rb = updates.iter().find(|u| u.path.ends_with("version.rb")).unwrap();
+        let version_rb = updates
+            .iter()
+            .find(|u| u.path.ends_with("version.rb"))
+            .unwrap();
         assert!(version_rb.content.contains("\"1.1.0\""));
         assert!(version_rb.content.contains("module MyGem"));
     }

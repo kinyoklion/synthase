@@ -6,15 +6,16 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Bazel strategy: updates MODULE.bazel version and CHANGELOG.md.
 pub struct BazelStrategy;
 
 /// Matches version in MODULE.bazel: version = "1.0.0"
-static MODULE_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(version\s*=\s*")([^"]+)(")"#).unwrap()
-});
+static MODULE_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(version\s*=\s*")([^"]+)(")"#).unwrap());
 
 impl ReleaseStrategy for BazelStrategy {
     fn build_updates(
@@ -49,7 +50,12 @@ impl ReleaseStrategy for BazelStrategy {
             });
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -61,8 +67,10 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn bazel_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("bazel".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("bazel".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
@@ -72,9 +80,15 @@ mod tests {
         repo.write_file("MODULE.bazel", "module(\n    name = \"my_module\",\n    version = \"1.0.0\",\n)\n\nbazel_dep(name = \"rules_go\", version = \"0.40.0\")\n");
 
         let strategy = BazelStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n", &bazel_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n",
+                &bazel_config(),
+            )
+            .unwrap();
 
         let module = updates.iter().find(|u| u.path == "MODULE.bazel").unwrap();
         // Module version updated

@@ -24,5 +24,5 @@ pub mod manifest;
 // Phase 6
 // pub mod plugin;     // P6.*: Plugin system
 
-#[cfg(test)]
-pub(crate) mod testutil;
+#[cfg(any(test, feature = "testutil"))]
+pub mod testutil;

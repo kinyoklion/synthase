@@ -17,6 +17,14 @@ chrono = { workspace = true }
 thiserror = { workspace = true }
 glob = { workspace = true }
 
+[features]
+testutil = ["dep:tempfile"]
+
+[dependencies.tempfile]
+workspace = true
+optional = true
+
 [dev-dependencies]
 tempfile = { workspace = true }
 pretty_assertions = { workspace = true }
+rustlease-please = { path = ".", features = ["testutil"] }

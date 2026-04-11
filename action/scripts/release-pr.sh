@@ -9,6 +9,34 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------------------
+# 0. Check for untagged merged release PRs — abort if any exist
+# ---------------------------------------------------------------------------
+# This matches release-please behavior: if a release PR has been merged but
+# not yet tagged (still has 'autorelease: pending'), we must not create a new
+# release PR. The 'release' command should run first to create the tag and
+# change the label to 'autorelease: tagged'.
+echo "::group::Checking for outstanding merged release PRs"
+PENDING_MERGED=$(gh pr list \
+  --base "$TARGET_BRANCH" \
+  --state merged \
+  --label "autorelease: pending" \
+  --json number \
+  --jq 'length' \
+  2>/dev/null || echo "0")
+
+if [ "$PENDING_MERGED" -gt 0 ]; then
+  echo "Found $PENDING_MERGED merged release PR(s) with 'autorelease: pending' label."
+  echo "Skipping — run the 'release' command first to tag these releases."
+  echo "releases_created=false" >> "$GITHUB_OUTPUT"
+  echo "prs_created=false" >> "$GITHUB_OUTPUT"
+  echo "releases=[]" >> "$GITHUB_OUTPUT"
+  echo "::endgroup::"
+  exit 0
+fi
+echo "No outstanding merged release PRs found — proceeding."
+echo "::endgroup::"
+
+# ---------------------------------------------------------------------------
 # 1. Run the CLI in dry-run mode to get the release plan
 # ---------------------------------------------------------------------------
 echo "::group::Running rustlease-please release-pr"

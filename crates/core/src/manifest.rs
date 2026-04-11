@@ -75,7 +75,11 @@ pub fn process_repo_with_config(
     manifest_versions: &HashMap<String, String>,
 ) -> Result<ReleaseOutput> {
     let repo = Repository::open(repo_path).map_err(|e| {
-        Error::Config(format!("failed to open repository at {}: {}", repo_path.display(), e))
+        Error::Config(format!(
+            "failed to open repository at {}: {}",
+            repo_path.display(),
+            e
+        ))
     })?;
 
     let tags = git::find_tags(&repo)?;
@@ -104,17 +108,14 @@ pub fn process_repo_with_config(
         let resolved = config::resolve_config(&manifest_config.defaults, pkg_config);
 
         // Determine component name
-        let component = resolved
-            .component
-            .clone()
-            .or_else(|| {
-                if pkg_path == "." {
-                    resolved.package_name.clone()
-                } else {
-                    // Use last path segment as component
-                    pkg_path.rsplit('/').next().map(|s| s.to_string())
-                }
-            });
+        let component = resolved.component.clone().or_else(|| {
+            if pkg_path == "." {
+                resolved.package_name.clone()
+            } else {
+                // Use last path segment as component
+                pkg_path.rsplit('/').next().map(|s| s.to_string())
+            }
+        });
 
         // Find latest release for this component
         let latest_tag = git::find_latest_tag_for_component(
@@ -123,21 +124,16 @@ pub fn process_repo_with_config(
             resolved.include_component_in_tag,
         );
 
-        let current_version = latest_tag
-            .map(|t| t.version().clone())
-            .or_else(|| {
-                manifest_versions
-                    .get(pkg_path)
-                    .and_then(|v| Version::parse(v).ok())
-            });
+        let current_version = latest_tag.map(|t| t.version().clone()).or_else(|| {
+            manifest_versions
+                .get(pkg_path)
+                .and_then(|v| Version::parse(v).ok())
+        });
 
         // Get commits for this path, filtered to those after the last release
-        let pkg_commits = commits_by_path
-            .get(pkg_path)
-            .cloned()
-            .unwrap_or_default();
+        let pkg_commits = commits_by_path.get(pkg_path).cloned().unwrap_or_default();
 
-        let filtered_commits: Vec<&GitCommit> = if let Some(ref tag) = latest_tag {
+        let filtered_commits: Vec<&GitCommit> = if let Some(tag) = latest_tag {
             filter_commits_after_sha(&pkg_commits, &tag.sha)
         } else {
             pkg_commits.to_vec()
@@ -252,10 +248,7 @@ pub fn process_repo_with_config(
 }
 
 /// Filter commits to only those after a given SHA.
-fn filter_commits_after_sha<'a>(
-    commits: &[&'a GitCommit],
-    sha: &str,
-) -> Vec<&'a GitCommit> {
+fn filter_commits_after_sha<'a>(commits: &[&'a GitCommit], sha: &str) -> Vec<&'a GitCommit> {
     let mut result = Vec::new();
     for commit in commits {
         if commit.sha == sha {
@@ -313,7 +306,7 @@ pub fn format_pr_title(
         let component_str = r
             .component
             .as_ref()
-            .map(|c| format!(" {}", c))
+            .map(|c| format!(" {c}"))
             .unwrap_or_default();
 
         pattern
@@ -331,10 +324,7 @@ pub fn format_pr_title(
 }
 
 /// Format a PR body for the release.
-pub fn format_pr_body(
-    releases: &[ComponentRelease],
-    config: &ManifestConfig,
-) -> String {
+pub fn format_pr_body(releases: &[ComponentRelease], config: &ManifestConfig) -> String {
     let mut body = String::new();
 
     // Header
@@ -412,7 +402,8 @@ mod tests {
         repo.add_and_commit("feat: add new feature");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -432,7 +423,8 @@ mod tests {
         repo.add_and_commit("fix: resolve bug");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -448,7 +440,8 @@ mod tests {
         repo.add_and_commit("chore: update readme");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -464,7 +457,8 @@ mod tests {
         repo.add_and_commit("feat: add feature");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -504,16 +498,25 @@ mod tests {
         repo.add_and_commit("fix: b fix");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
         assert_eq!(output.releases.len(), 2);
 
-        let a_release = output.releases.iter().find(|r| r.component.as_deref() == Some("a")).unwrap();
+        let a_release = output
+            .releases
+            .iter()
+            .find(|r| r.component.as_deref() == Some("a"))
+            .unwrap();
         assert_eq!(a_release.new_version, Version::new(1, 1, 0)); // feat → minor
 
-        let b_release = output.releases.iter().find(|r| r.component.as_deref() == Some("b")).unwrap();
+        let b_release = output
+            .releases
+            .iter()
+            .find(|r| r.component.as_deref() == Some("b"))
+            .unwrap();
         assert_eq!(b_release.new_version, Version::new(2, 0, 1)); // fix → patch
     }
 
@@ -545,7 +548,8 @@ mod tests {
         repo.add_and_commit("feat: a feature");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -562,7 +566,8 @@ mod tests {
         repo.add_and_commit("feat: feature");
 
         let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest = config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let manifest =
+            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 

@@ -5,7 +5,9 @@ use crate::config::ResolvedConfig;
 use crate::error::Result;
 use crate::updater;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// PHP strategy: updates composer.json version and CHANGELOG.md.
 pub struct PhpStrategy;
@@ -39,7 +41,12 @@ impl ReleaseStrategy for PhpStrategy {
             });
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -51,20 +58,31 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn php_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("php".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("php".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
     #[test]
     fn test_php_composer_json() {
         let repo = TestRepo::new();
-        repo.write_file("composer.json", "{\n  \"name\": \"vendor/pkg\",\n  \"version\": \"1.0.0\"\n}\n");
+        repo.write_file(
+            "composer.json",
+            "{\n  \"name\": \"vendor/pkg\",\n  \"version\": \"1.0.0\"\n}\n",
+        );
 
         let strategy = PhpStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 0, 1), "## 1.0.1\n", &php_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 0, 1),
+                "## 1.0.1\n",
+                &php_config(),
+            )
+            .unwrap();
 
         let composer = updates.iter().find(|u| u.path == "composer.json").unwrap();
         assert!(composer.content.contains("\"version\": \"1.0.1\""));

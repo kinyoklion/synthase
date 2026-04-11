@@ -6,14 +6,15 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Dart strategy: updates pubspec.yaml version field and CHANGELOG.md.
 pub struct DartStrategy;
 
-static PUBSPEC_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?m)^(version:\s*)(.+)$").unwrap()
-});
+static PUBSPEC_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?m)^(version:\s*)(.+)$").unwrap());
 
 impl ReleaseStrategy for DartStrategy {
     fn build_updates(
@@ -47,7 +48,12 @@ impl ReleaseStrategy for DartStrategy {
             });
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -59,20 +65,31 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn dart_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("dart".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("dart".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
     #[test]
     fn test_dart_pubspec_yaml() {
         let repo = TestRepo::new();
-        repo.write_file("pubspec.yaml", "name: my_pkg\nversion: 1.0.0\nenvironment:\n  sdk: '>=3.0.0 <4.0.0'\n");
+        repo.write_file(
+            "pubspec.yaml",
+            "name: my_pkg\nversion: 1.0.0\nenvironment:\n  sdk: '>=3.0.0 <4.0.0'\n",
+        );
 
         let strategy = DartStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n", &dart_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n",
+                &dart_config(),
+            )
+            .unwrap();
 
         let pubspec = updates.iter().find(|u| u.path == "pubspec.yaml").unwrap();
         assert!(pubspec.content.contains("version: 1.1.0"));

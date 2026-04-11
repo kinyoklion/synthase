@@ -6,14 +6,15 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Helm strategy: updates Chart.yaml version field and CHANGELOG.md.
 pub struct HelmStrategy;
 
-static CHART_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?m)^(version:\s*)(.+)$").unwrap()
-});
+static CHART_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?m)^(version:\s*)(.+)$").unwrap());
 
 impl ReleaseStrategy for HelmStrategy {
     fn build_updates(
@@ -47,7 +48,12 @@ impl ReleaseStrategy for HelmStrategy {
             });
         }
 
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -59,20 +65,31 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn helm_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("helm".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("helm".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
     #[test]
     fn test_helm_chart_yaml() {
         let repo = TestRepo::new();
-        repo.write_file("Chart.yaml", "apiVersion: v2\nname: my-chart\nversion: 1.0.0\nappVersion: \"1.0\"\n");
+        repo.write_file(
+            "Chart.yaml",
+            "apiVersion: v2\nname: my-chart\nversion: 1.0.0\nappVersion: \"1.0\"\n",
+        );
 
         let strategy = HelmStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 0, 1), "## 1.0.1\n", &helm_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 0, 1),
+                "## 1.0.1\n",
+                &helm_config(),
+            )
+            .unwrap();
 
         let chart = updates.iter().find(|u| u.path == "Chart.yaml").unwrap();
         assert!(chart.content.contains("version: 1.0.1"));

@@ -59,7 +59,7 @@ pub fn generate_changelog_entry(
         output.push('\n');
         output.push_str("### ⚠ BREAKING CHANGES\n\n");
         for note in &breaking_notes {
-            output.push_str(&format!("* {}\n", note));
+            output.push_str(&format!("* {note}\n"));
         }
     }
 
@@ -74,7 +74,7 @@ pub fn generate_changelog_entry(
                 continue;
             }
             output.push('\n');
-            output.push_str(&format!("### {}\n\n", section_name));
+            output.push_str(&format!("### {section_name}\n\n"));
             for commit in section_commits {
                 output.push_str(&format_commit_line(commit, options));
                 output.push('\n');
@@ -94,7 +94,7 @@ pub fn update_changelog(existing_content: &str, new_entry: &str) -> String {
         LazyLock::new(|| Regex::new(r"\n###? v?[0-9\[]").unwrap());
 
     if existing_content.trim().is_empty() {
-        return format!("# Changelog\n\n{}", new_entry);
+        return format!("# Changelog\n\n{new_entry}");
     }
 
     // Find the first version header in existing content
@@ -103,7 +103,7 @@ pub fn update_changelog(existing_content: &str, new_entry: &str) -> String {
         let insert_pos = m.start();
         let before = &existing_content[..insert_pos];
         let after = &existing_content[insert_pos..];
-        format!("{}\n{}{}", before, new_entry, after)
+        format!("{before}\n{new_entry}{after}")
     } else {
         // No previous version header found — append after existing content
         format!("{}\n{}", existing_content.trim_end(), new_entry)
@@ -128,20 +128,14 @@ fn build_section_config(custom: &Option<Vec<ChangelogSection>>) -> SectionConfig
 
     if let Some(sections) = custom {
         for s in sections {
-            type_map.insert(
-                s.commit_type.clone(),
-                (s.section.clone(), s.hidden),
-            );
+            type_map.insert(s.commit_type.clone(), (s.section.clone(), s.hidden));
             if seen_sections.insert(s.section.clone()) {
                 ordered.push((s.section.clone(), s.hidden));
             }
         }
     } else {
         for &(commit_type, section_name, hidden) in DEFAULT_SECTIONS {
-            type_map.insert(
-                commit_type.to_string(),
-                (section_name.to_string(), hidden),
-            );
+            type_map.insert(commit_type.to_string(), (section_name.to_string(), hidden));
             if seen_sections.insert(section_name.to_string()) {
                 ordered.push((section_name.to_string(), hidden));
             }
@@ -174,7 +168,7 @@ fn collect_breaking_changes(commits: &[ConventionalCommit]) -> Vec<String> {
         if let Some(ref desc) = commit.breaking_description {
             let formatted = if let Some(ref scope) = commit.scope {
                 if !scope.is_empty() {
-                    format!("**{}:** {}", scope, desc)
+                    format!("**{scope}:** {desc}")
                 } else {
                     desc.clone()
                 }
@@ -228,7 +222,7 @@ fn format_commit_line(commit: &ConventionalCommit, options: &ChangelogOptions) -
     // Scope in bold
     if let Some(ref scope) = commit.scope {
         if !scope.is_empty() {
-            line.push_str(&format!("**{}:** ", scope));
+            line.push_str(&format!("**{scope}:** "));
         }
     }
 
@@ -332,9 +326,7 @@ mod tests {
         let options = make_options();
         let commits = vec![make_commit("feat", None, "feature", false)];
         let entry = generate_changelog_entry(&commits, &options);
-        assert!(entry.contains(
-            "[1.2.3](https://github.com/myorg/myrepo/compare/v1.2.2...v1.2.3)"
-        ));
+        assert!(entry.contains("[1.2.3](https://github.com/myorg/myrepo/compare/v1.2.2...v1.2.3)"));
     }
 
     #[test]
@@ -394,9 +386,7 @@ mod tests {
         let options = make_options();
         let commits = vec![make_commit_with_ref("fix", "fix crash", 42)];
         let entry = generate_changelog_entry(&commits, &options);
-        assert!(entry.contains(
-            "([#42](https://github.com/myorg/myrepo/issues/42))"
-        ));
+        assert!(entry.contains("([#42](https://github.com/myorg/myrepo/issues/42))"));
     }
 
     #[test]
@@ -493,7 +483,8 @@ mod tests {
 
     #[test]
     fn test_update_changelog_prepend() {
-        let existing = "# Changelog\n\n## [1.0.0](url) (2024-01-01)\n\n### Features\n\n* old feature\n";
+        let existing =
+            "# Changelog\n\n## [1.0.0](url) (2024-01-01)\n\n### Features\n\n* old feature\n";
         let new_entry = "## [1.1.0](url) (2024-02-01)\n\n### Bug Fixes\n\n* a fix\n";
         let result = update_changelog(existing, new_entry);
 
@@ -507,7 +498,8 @@ mod tests {
 
     #[test]
     fn test_update_changelog_with_preamble() {
-        let existing = "# Changelog\n\nAll notable changes.\n\n## [1.0.0](url) (2024-01-01)\n\n* stuff\n";
+        let existing =
+            "# Changelog\n\nAll notable changes.\n\n## [1.0.0](url) (2024-01-01)\n\n* stuff\n";
         let new_entry = "## [2.0.0](url) (2024-06-01)\n\n* new stuff\n";
         let result = update_changelog(existing, new_entry);
 

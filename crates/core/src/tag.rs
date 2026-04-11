@@ -191,23 +191,13 @@ mod tests {
 
     #[test]
     fn test_display_with_component() {
-        let tag = TagName::new(
-            Version::new(1, 2, 3),
-            Some("my-lib".to_string()),
-            "-",
-            true,
-        );
+        let tag = TagName::new(Version::new(1, 2, 3), Some("my-lib".to_string()), "-", true);
         assert_eq!(tag.to_string(), "my-lib-v1.2.3");
     }
 
     #[test]
     fn test_display_with_slash_separator() {
-        let tag = TagName::new(
-            Version::new(1, 0, 0),
-            Some("my-lib".to_string()),
-            "/",
-            true,
-        );
+        let tag = TagName::new(Version::new(1, 0, 0), Some("my-lib".to_string()), "/", true);
         assert_eq!(tag.to_string(), "my-lib/v1.0.0");
     }
 
@@ -224,12 +214,7 @@ mod tests {
 
     #[test]
     fn test_display_prerelease() {
-        let tag = TagName::new(
-            Version::parse("1.0.0-alpha.1").unwrap(),
-            None,
-            "-",
-            true,
-        );
+        let tag = TagName::new(Version::parse("1.0.0-alpha.1").unwrap(), None, "-", true);
         assert_eq!(tag.to_string(), "v1.0.0-alpha.1");
     }
 

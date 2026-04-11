@@ -5,7 +5,9 @@ use crate::config::ResolvedConfig;
 use crate::error::Result;
 use crate::updater;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Rust/Cargo strategy: updates Cargo.toml, Cargo.lock, and CHANGELOG.md.
 pub struct RustStrategy;
@@ -51,8 +53,7 @@ impl ReleaseStrategy for RustStrategy {
                 .or(config.component.as_deref());
 
             if let Some(name) = pkg_name {
-                let updated =
-                    updater::update_cargo_lock_version(&content, name, &version_str);
+                let updated = updater::update_cargo_lock_version(&content, name, &version_str);
                 updates.push(FileUpdate {
                     path: "Cargo.lock".to_string(),
                     content: updated,
@@ -80,11 +81,15 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn rust_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("rust".to_string());
-        let mut pkg = crate::config::ReleaserConfig::default();
-        pkg.component = Some("my-crate".to_string());
-        pkg.package_name = Some("my-crate".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("rust".to_string()),
+            ..Default::default()
+        };
+        let pkg = crate::config::ReleaserConfig {
+            component: Some("my-crate".to_string()),
+            package_name: Some("my-crate".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &pkg)
     }
 
@@ -101,13 +106,7 @@ mod tests {
         let strategy = RustStrategy;
 
         let updates = strategy
-            .build_updates(
-                test_repo.path(),
-                ".",
-                &version,
-                "## 1.1.0\n",
-                &config,
-            )
+            .build_updates(test_repo.path(), ".", &version, "## 1.1.0\n", &config)
             .unwrap();
 
         let cargo_update = updates.iter().find(|u| u.path == "Cargo.toml").unwrap();
@@ -136,8 +135,12 @@ mod tests {
             .unwrap();
 
         let lock_update = updates.iter().find(|u| u.path == "Cargo.lock").unwrap();
-        assert!(lock_update.content.contains("name = \"my-crate\"\nversion = \"1.1.0\""));
-        assert!(lock_update.content.contains("name = \"serde\"\nversion = \"1.0.100\""));
+        assert!(lock_update
+            .content
+            .contains("name = \"my-crate\"\nversion = \"1.1.0\""));
+        assert!(lock_update
+            .content
+            .contains("name = \"serde\"\nversion = \"1.0.100\""));
     }
 
     #[test]

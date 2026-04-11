@@ -6,22 +6,22 @@ use std::sync::LazyLock;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Python strategy: updates pyproject.toml, setup.py, setup.cfg, and CHANGELOG.md.
 pub struct PythonStrategy;
 
-static PYPROJECT_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?m)^(version\s*=\s*")([^"]+)(")"#).unwrap()
-});
+static PYPROJECT_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(?m)^(version\s*=\s*")([^"]+)(")"#).unwrap());
 
 static SETUP_PY_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?m)(version\s*=\s*["'])([0-9]+\.[0-9]+\.[0-9]+[^"']*)(["'])"#).unwrap()
 });
 
-static SETUP_CFG_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?m)^(version\s*=\s*)(.+)$").unwrap()
-});
+static SETUP_CFG_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?m)^(version\s*=\s*)(.+)$").unwrap());
 
 impl ReleaseStrategy for PythonStrategy {
     fn build_updates(
@@ -92,7 +92,12 @@ impl ReleaseStrategy for PythonStrategy {
         }
 
         // Extra files
-        updates.extend(build_extra_file_updates(repo_path, pkg_path, new_version, &config.extra_files)?);
+        updates.extend(build_extra_file_updates(
+            repo_path,
+            pkg_path,
+            new_version,
+            &config.extra_files,
+        )?);
 
         Ok(updates)
     }
@@ -104,20 +109,31 @@ mod tests {
     use crate::testutil::TestRepo;
 
     fn python_config() -> ResolvedConfig {
-        let mut defaults = crate::config::ReleaserConfig::default();
-        defaults.release_type = Some("python".to_string());
+        let defaults = crate::config::ReleaserConfig {
+            release_type: Some("python".to_string()),
+            ..Default::default()
+        };
         crate::config::resolve_config(&defaults, &crate::config::ReleaserConfig::default())
     }
 
     #[test]
     fn test_python_pyproject_toml() {
         let repo = TestRepo::new();
-        repo.write_file("pyproject.toml", "[project]\nname = \"my-pkg\"\nversion = \"1.0.0\"\n");
+        repo.write_file(
+            "pyproject.toml",
+            "[project]\nname = \"my-pkg\"\nversion = \"1.0.0\"\n",
+        );
 
         let strategy = PythonStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 1, 0), "## 1.1.0\n", &python_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 1, 0),
+                "## 1.1.0\n",
+                &python_config(),
+            )
+            .unwrap();
 
         let pyproject = updates.iter().find(|u| u.path == "pyproject.toml").unwrap();
         assert!(pyproject.content.contains("version = \"1.1.0\""));
@@ -127,12 +143,21 @@ mod tests {
     #[test]
     fn test_python_setup_py() {
         let repo = TestRepo::new();
-        repo.write_file("setup.py", "from setuptools import setup\nsetup(\n    name='my-pkg',\n    version='1.0.0',\n)\n");
+        repo.write_file(
+            "setup.py",
+            "from setuptools import setup\nsetup(\n    name='my-pkg',\n    version='1.0.0',\n)\n",
+        );
 
         let strategy = PythonStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(2, 0, 0), "## 2.0.0\n", &python_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(2, 0, 0),
+                "## 2.0.0\n",
+                &python_config(),
+            )
+            .unwrap();
 
         let setup = updates.iter().find(|u| u.path == "setup.py").unwrap();
         assert!(setup.content.contains("version='2.0.0'"));
@@ -144,9 +169,15 @@ mod tests {
         repo.write_file("setup.cfg", "[metadata]\nname = my-pkg\nversion = 1.0.0\n");
 
         let strategy = PythonStrategy;
-        let updates = strategy.build_updates(
-            repo.path(), ".", &Version::new(1, 0, 1), "## 1.0.1\n", &python_config(),
-        ).unwrap();
+        let updates = strategy
+            .build_updates(
+                repo.path(),
+                ".",
+                &Version::new(1, 0, 1),
+                "## 1.0.1\n",
+                &python_config(),
+            )
+            .unwrap();
 
         let cfg = updates.iter().find(|u| u.path == "setup.cfg").unwrap();
         assert!(cfg.content.contains("version = 1.0.1"));

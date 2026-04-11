@@ -215,14 +215,14 @@ fn bump_prerelease_number(prerelease: &str) -> String {
             &prerelease[m.end()..]
         )
     } else {
-        format!("{}.1", prerelease)
+        format!("{prerelease}.1")
     }
 }
 
 /// Build a Version with a prerelease string.
 fn version_with_prerelease(major: u64, minor: u64, patch: u64, pre: &str) -> Version {
     // Use the semver crate's parser to build a proper Version
-    Version::parse(&format!("{}.{}.{}-{}", major, minor, patch, pre)).unwrap()
+    Version::parse(&format!("{major}.{minor}.{patch}-{pre}")).unwrap()
 }
 
 /// Prerelease versioning strategy.
@@ -304,12 +304,7 @@ impl VersioningStrategy for PrereleaseVersioningStrategy {
                     let new_pre = bump_prerelease_number(&current.pre.to_string());
                     version_with_prerelease(current.major, current.minor, current.patch, &new_pre)
                 } else {
-                    version_with_prerelease(
-                        current.major + 1,
-                        0,
-                        0,
-                        &self.prerelease_type,
-                    )
+                    version_with_prerelease(current.major + 1, 0, 0, &self.prerelease_type)
                 }
             }
         };
@@ -323,8 +318,7 @@ impl VersioningStrategy for PrereleaseVersioningStrategy {
 // ---------------------------------------------------------------------------
 
 /// Regex for matching service pack prerelease: `sp.N`
-static SERVICE_PACK_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"sp\.(\d+)").unwrap());
+static SERVICE_PACK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"sp\.(\d+)").unwrap());
 
 /// Service-pack versioning strategy.
 ///
@@ -345,7 +339,7 @@ impl VersioningStrategy for ServicePackVersioningStrategy {
             current.major,
             current.minor,
             current.patch,
-            &format!("sp.{}", next_sp),
+            &format!("sp.{next_sp}"),
         ))
     }
 }
@@ -699,8 +693,7 @@ mod tests {
 
     #[test]
     fn test_factory_prerelease() {
-        let strategy =
-            create_versioning_strategy("prerelease", false, false, Some("beta"));
+        let strategy = create_versioning_strategy("prerelease", false, false, Some("beta"));
         let v = Version::parse("1.0.0").unwrap();
         let commits = vec![make_commit("a", "fix", false)];
         assert_eq!(

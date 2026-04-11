@@ -13,6 +13,12 @@ pub struct TestRepo {
     repo: Repository,
 }
 
+impl Default for TestRepo {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TestRepo {
     /// Create a new empty git repository in a temporary directory.
     pub fn new() -> Self {
@@ -62,8 +68,8 @@ impl TestRepo {
         let tree_oid = index.write_tree().expect("failed to write tree");
         let tree = self.repo.find_tree(tree_oid).expect("failed to find tree");
 
-        let sig = Signature::now("Test Author", "test@example.com")
-            .expect("failed to create signature");
+        let sig =
+            Signature::now("Test Author", "test@example.com").expect("failed to create signature");
 
         let parent_commit = self
             .repo
@@ -93,15 +99,13 @@ impl TestRepo {
 
     /// Write a `release-please-config.json` file in the repo root.
     pub fn write_config(&self, config: &serde_json::Value) {
-        let content =
-            serde_json::to_string_pretty(config).expect("failed to serialize config");
+        let content = serde_json::to_string_pretty(config).expect("failed to serialize config");
         self.write_file("release-please-config.json", &content);
     }
 
     /// Write a `.release-please-manifest.json` file in the repo root.
     pub fn write_manifest(&self, manifest: &serde_json::Value) {
-        let content =
-            serde_json::to_string_pretty(manifest).expect("failed to serialize manifest");
+        let content = serde_json::to_string_pretty(manifest).expect("failed to serialize manifest");
         self.write_file(".release-please-manifest.json", &content);
     }
 
@@ -140,10 +144,7 @@ mod tests {
 
         // Create a tag and verify it exists
         test_repo.create_tag("v1.0.0");
-        let tag_ref = test_repo
-            .repo()
-            .find_reference("refs/tags/v1.0.0")
-            .unwrap();
+        let tag_ref = test_repo.repo().find_reference("refs/tags/v1.0.0").unwrap();
         let tag_target = tag_ref.peel_to_commit().unwrap();
         assert_eq!(tag_target.id(), oid);
     }
@@ -186,15 +187,12 @@ mod tests {
         // Verify files exist and are valid JSON
         let config_content =
             fs::read_to_string(test_repo.path().join("release-please-config.json")).unwrap();
-        let parsed_config: serde_json::Value =
-            serde_json::from_str(&config_content).unwrap();
+        let parsed_config: serde_json::Value = serde_json::from_str(&config_content).unwrap();
         assert_eq!(parsed_config["release-type"], "rust");
 
         let manifest_content =
-            fs::read_to_string(test_repo.path().join(".release-please-manifest.json"))
-                .unwrap();
-        let parsed_manifest: serde_json::Value =
-            serde_json::from_str(&manifest_content).unwrap();
+            fs::read_to_string(test_repo.path().join(".release-please-manifest.json")).unwrap();
+        let parsed_manifest: serde_json::Value = serde_json::from_str(&manifest_content).unwrap();
         assert_eq!(parsed_manifest["."], "1.0.0");
     }
 

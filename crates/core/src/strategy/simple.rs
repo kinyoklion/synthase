@@ -4,7 +4,9 @@ use std::path::Path;
 use crate::config::ResolvedConfig;
 use crate::error::Result;
 
-use super::{build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy};
+use super::{
+    build_changelog_update, build_extra_file_updates, join_pkg_path, FileUpdate, ReleaseStrategy,
+};
 
 /// Simple strategy: updates CHANGELOG.md and an optional version.txt file.
 pub struct SimpleStrategy;
@@ -26,10 +28,7 @@ impl ReleaseStrategy for SimpleStrategy {
         }
 
         // version.txt (or custom version_file)
-        let version_file = config
-            .version_file
-            .as_deref()
-            .unwrap_or("version.txt");
+        let version_file = config.version_file.as_deref().unwrap_or("version.txt");
         let version_path = join_pkg_path(pkg_path, version_file);
         let full_path = repo_path.join(&version_path);
 
@@ -37,7 +36,7 @@ impl ReleaseStrategy for SimpleStrategy {
         if full_path.exists() {
             updates.push(FileUpdate {
                 path: version_path,
-                content: format!("{}\n", new_version),
+                content: format!("{new_version}\n"),
                 create_if_missing: false,
             });
         }

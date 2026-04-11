@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use serde_json::json;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[command(name = "rustlease-please")]
@@ -61,7 +61,7 @@ fn main() {
     };
 
     if let Err(e) = result {
-        eprintln!("error: {}", e);
+        eprintln!("error: {e}");
         std::process::exit(1);
     }
 }
@@ -88,11 +88,8 @@ fn cmd_release_pr(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
     let config_path = repo_path.join("release-please-config.json");
     let config = rustlease_please::config::load_config(&config_path)?;
 
-    let pr_title = rustlease_please::manifest::format_pr_title(
-        &output.releases,
-        &config,
-        &cli.target_branch,
-    );
+    let pr_title =
+        rustlease_please::manifest::format_pr_title(&output.releases, &config, &cli.target_branch);
     let pr_body = rustlease_please::manifest::format_pr_body(&output.releases, &config);
 
     let releases_json = build_releases_json(&output.releases);
@@ -176,10 +173,7 @@ fn cmd_bootstrap(
     let manifest_path = repo_path.join(".release-please-manifest.json");
 
     if config_path.exists() {
-        eprintln!(
-            "Config file already exists: {}",
-            config_path.display()
-        );
+        eprintln!("Config file already exists: {}", config_path.display());
         return Ok(());
     }
 
@@ -256,9 +250,7 @@ fn build_releases_json(
         .collect()
 }
 
-fn build_files_json(
-    output: &rustlease_please::manifest::ReleaseOutput,
-) -> Vec<serde_json::Value> {
+fn build_files_json(output: &rustlease_please::manifest::ReleaseOutput) -> Vec<serde_json::Value> {
     let mut files = Vec::new();
     for release in &output.releases {
         for update in &release.file_updates {
@@ -280,7 +272,7 @@ fn build_files_json(
 }
 
 fn apply_file_updates(
-    repo_path: &PathBuf,
+    repo_path: &Path,
     output: &rustlease_please::manifest::ReleaseOutput,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for release in &output.releases {

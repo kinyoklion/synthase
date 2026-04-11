@@ -106,14 +106,11 @@ runs:
         echo "RUSTLEASE_BIN=${{ runner.temp }}/rustlease-please" >> "$GITHUB_ENV"
         echo "Installed rustlease-please ${VERSION}"
 
-    - name: Install Rust toolchain (build from source)
-      if: inputs.cli-version == 'build' && inputs.command != 'publish'
-      uses: dtolnay/rust-toolchain@stable
-
     - name: Build rustlease-please CLI (from source)
       if: inputs.cli-version == 'build' && inputs.command != 'publish'
       shell: bash
       run: |
+        rustup toolchain install stable --profile minimal
         cd "${{ github.action_path }}/.."
         cargo build --release
         echo "RUSTLEASE_BIN=${{ github.action_path }}/../target/release/rustlease-please" >> "$GITHUB_ENV"

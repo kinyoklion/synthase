@@ -1,25 +1,25 @@
 name: Release
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: [main]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  # Step 1: Create a draft GitHub release with tag and release notes
-  create-release:
-    if: >-
-      github.event.pull_request.merged == true &&
-      contains(github.event.pull_request.labels.*.name, 'autorelease: pending')
+  # Phase 1: Run rustlease-please — creates draft releases OR updates release PRs
+  release:
     runs-on: ubuntu-latest
     outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
       version: ${{ steps.release.outputs.version }}
-      releases_created: ${{ steps.release.outputs.releases_created }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,13 +27,11 @@ jobs:
 
       - uses: ./action
         id: release
-        with:
-          command: release
 
-  # Step 2: Build CLI binary and upload to the draft release
-  build-artifacts:
-    needs: create-release
-    if: needs.create-release.outputs.releases_created == 'true'
+  # Phase 2: Build artifacts (only if a release was created)
+  build:
+    needs: release
+    if: needs.release.outputs.releases_created == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -54,20 +52,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ needs.create-release.outputs.tag_name }}" \
+          gh release upload "${{ needs.release.outputs.tag_name }}" \
             rustlease-please-linux-x64 \
             --clobber
 
-  # Step 3: Take the release out of draft
-  publish-release:
-    needs: [create-release, build-artifacts]
-    if: needs.create-release.outputs.releases_created == 'true'
+  # Phase 3: Publish — take the release out of draft
+  publish:
+    needs: [release, build]
+    if: needs.release.outputs.releases_created == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Publish release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          gh release edit "${{ needs.create-release.outputs.tag_name }}" --draft=false
-          echo "Published release ${{ needs.create-release.outputs.tag_name }}"
+      - uses: actions/checkout@v4
+
+      - uses: ./action
+        with:
+          command: publish
+          tag-name: ${{ needs.release.outputs.tag_name }}

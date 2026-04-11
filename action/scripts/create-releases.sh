@@ -132,11 +132,25 @@ MINOR=$(echo "$VERSION" | cut -d. -f2)
 PATCH=$(echo "$VERSION" | cut -d. -f3 | cut -d- -f1)
 
 echo "releases_created=true" >> "$GITHUB_OUTPUT"
+echo "release_created=true" >> "$GITHUB_OUTPUT"
 echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
 echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
 echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
 echo "patch=$PATCH" >> "$GITHUB_OUTPUT"
+
+# Get release URLs
+UPLOAD_URL=$(gh release view "$TAG_NAME" --json uploadUrl --jq '.uploadUrl' 2>/dev/null || echo "")
+HTML_URL=$(gh release view "$TAG_NAME" --json htmlUrl --jq '.htmlUrl' 2>/dev/null || echo "")
+echo "upload_url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
+echo "html_url=$HTML_URL" >> "$GITHUB_OUTPUT"
+
+# Paths released (for monorepo matrix builds)
+{
+  echo "paths_released<<PATHS_EOF"
+  echo "$CLI_OUTPUT" | jq -c '[.releases[].path]'
+  echo "PATHS_EOF"
+} >> "$GITHUB_OUTPUT"
 
 {
   echo "releases<<RELEASES_EOF"

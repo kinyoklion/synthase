@@ -27,9 +27,7 @@ RELEASE_COUNT=$(echo "$CLI_OUTPUT" | jq '.releases | length')
 
 if [ "$RELEASE_COUNT" -eq 0 ]; then
   echo "No releases to create."
-  echo "releases_created=false" >> "$GITHUB_OUTPUT"
   echo "prs_created=false" >> "$GITHUB_OUTPUT"
-  echo "releases=[]" >> "$GITHUB_OUTPUT"
   exit 0
 fi
 
@@ -144,9 +142,7 @@ else
   if [ "$PENDING_MERGED" -gt 0 ]; then
     echo "Found $PENDING_MERGED merged release PR(s) with 'autorelease: pending' label."
     echo "Skipping PR creation — run the 'release' command first to tag these releases."
-    echo "releases_created=false" >> "$GITHUB_OUTPUT"
     echo "prs_created=false" >> "$GITHUB_OUTPUT"
-    echo "releases=[]" >> "$GITHUB_OUTPUT"
     echo "::endgroup::"
     git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout - 2>/dev/null || true
     exit 0

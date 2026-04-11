@@ -1,6 +1,10 @@
 //! Release strategies — each knows which files to update for its ecosystem.
 
+mod dart;
+mod go;
+mod helm;
 mod node;
+mod python;
 mod rust;
 mod simple;
 
@@ -45,6 +49,10 @@ pub fn create_strategy(release_type: &str) -> Box<dyn ReleaseStrategy> {
         "simple" => Box::new(simple::SimpleStrategy),
         "rust" => Box::new(rust::RustStrategy),
         "node" => Box::new(node::NodeStrategy),
+        "python" => Box::new(python::PythonStrategy),
+        "go" => Box::new(go::GoStrategy),
+        "helm" => Box::new(helm::HelmStrategy),
+        "dart" => Box::new(dart::DartStrategy),
         _ => Box::new(simple::SimpleStrategy),
     }
 }

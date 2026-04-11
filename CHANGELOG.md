@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.0](https://github.com/kinyoklion/rustlease-please/compare/rustlease-please-v0.4.0...rustlease-please-v0.5.0) (2026-04-11)
+
+### Features
+
+* download pre-built binary instead of building from source
+
 ## 0.3.0 (2026-04-11)
 
 ### Features

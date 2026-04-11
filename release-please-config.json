@@ -1,6 +1,7 @@
 {
   "release-type": "rust",
   "draft": true,
+  "extra-files": ["action/action.yml"],
   "packages": {
     ".": {
       "component": "rustlease-please",

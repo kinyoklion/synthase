@@ -27,11 +27,11 @@ inputs:
     description: 'Path to .release-please-manifest.json.'
     required: false
     default: '.release-please-manifest.json'
-  # Binary distribution
   cli-version:
     description: 'Version of rustlease-please CLI to use. Set to "build" to build from source.'
     required: false
-    default: 'build'
+    # x-release-please-version
+    default: '0.4.0'
 
 outputs:
   releases_created:
@@ -65,24 +65,38 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install Rust toolchain
+    - name: Install rustlease-please CLI (from release)
+      if: inputs.cli-version != 'build'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        VERSION="${{ inputs.cli-version }}"
+        REPO="kinyoklion/rustlease-please"
+        TAG="rustlease-please-v${VERSION}"
+
+        echo "Downloading rustlease-please ${VERSION} from ${REPO}..."
+        gh release download "$TAG" \
+          --repo "$REPO" \
+          --pattern "rustlease-please-linux-x64" \
+          --dir "${{ runner.temp }}"
+
+        chmod +x "${{ runner.temp }}/rustlease-please-linux-x64"
+        mv "${{ runner.temp }}/rustlease-please-linux-x64" "${{ runner.temp }}/rustlease-please"
+        echo "RUSTLEASE_BIN=${{ runner.temp }}/rustlease-please" >> "$GITHUB_ENV"
+        echo "Installed rustlease-please ${VERSION}"
+
+    - name: Install Rust toolchain (build from source)
       if: inputs.cli-version == 'build'
       uses: dtolnay/rust-toolchain@stable
 
-    - name: Build rustlease-please CLI
+    - name: Build rustlease-please CLI (from source)
       if: inputs.cli-version == 'build'
       shell: bash
       run: |
         cd "${{ github.action_path }}/.."
         cargo build --release
         echo "RUSTLEASE_BIN=${{ github.action_path }}/../target/release/rustlease-please" >> "$GITHUB_ENV"
-
-    # TODO: Add download step for pre-built binaries when cli-version != 'build'
-    # - name: Download rustlease-please binary
-    #   if: inputs.cli-version != 'build'
-    #   shell: bash
-    #   run: |
-    #     ...download from releases...
 
     - name: Run rustlease-please
       id: run-command

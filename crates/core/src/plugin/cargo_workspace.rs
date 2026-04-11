@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use crate::changelog;
-use crate::config::{self, ManifestConfig, ResolvedConfig};
+use crate::config::{self, ManifestConfig};
 use crate::error::Result;
 use crate::manifest::ComponentRelease;
 use crate::strategy::FileUpdate;
@@ -52,9 +52,6 @@ impl Plugin for CargoWorkspacePlugin {
         if crates.is_empty() {
             return Ok(releases);
         }
-
-        let workspace_crate_names: HashSet<&str> =
-            crates.iter().map(|c| c.name.as_str()).collect();
 
         // Build map of crate name → new version from existing releases
         let mut updated_versions: HashMap<String, Version> = HashMap::new();
@@ -316,7 +313,7 @@ fn visit_dfs<'a>(
 /// Update Cargo.toml dependency version references within an existing release.
 fn update_cargo_toml_deps_in_release(
     release: &mut ComponentRelease,
-    repo_path: &Path,
+    _repo_path: &Path,
     all_versions: &HashMap<String, Version>,
 ) {
     for update in &mut release.file_updates {
@@ -390,7 +387,7 @@ fn create_cascade_release(
     repo_path: &Path,
     all_versions: &HashMap<String, Version>,
     manifest_config: &ManifestConfig,
-    manifest_versions: &HashMap<String, String>,
+    _manifest_versions: &HashMap<String, String>,
 ) -> Result<Option<ComponentRelease>> {
     let pkg_config = manifest_config
         .packages

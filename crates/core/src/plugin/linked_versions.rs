@@ -4,12 +4,10 @@ use semver::Version;
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::config::{self, ManifestConfig};
+use crate::config::ManifestConfig;
 use crate::error::Result;
 use crate::manifest::ComponentRelease;
-use crate::strategy::FileUpdate;
 use crate::tag::TagName;
-use crate::version;
 
 use super::Plugin;
 
@@ -104,7 +102,7 @@ impl Plugin for LinkedVersionsPlugin {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::ResolvedConfig;
+    use crate::config;
 
     fn make_release(component: &str, version: &str) -> ComponentRelease {
         let resolved = config::resolve_config(

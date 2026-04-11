@@ -673,13 +673,14 @@ dependencies = [
 
 [[package]]
 name = "rustlease-please"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "git2",
  "glob",
  "pretty_assertions",
  "regex",
+ "rustlease-please",
  "semver",
  "serde",
  "serde_json",

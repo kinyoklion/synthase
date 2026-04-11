@@ -27,6 +27,8 @@ jobs:
 
       - uses: ./action
         id: release
+        with:
+          cli-version: build
 
   # Phase 2: Build artifacts (only if a release was created)
   build:

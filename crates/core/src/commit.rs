@@ -115,8 +115,7 @@ pub fn parse_conventional_commit(sha: &str, message: &str) -> Option<Conventiona
     // Detect Release-As
     let release_as = footers
         .iter()
-        .filter(|f| RELEASE_AS_KEY.is_match(&f.key))
-        .next_back()
+        .rfind(|f| RELEASE_AS_KEY.is_match(&f.key))
         .map(|f| f.value.trim().to_string());
 
     // Extract issue references from subject, body, and footers

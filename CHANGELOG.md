@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.1](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.0...synthase-v0.8.1) (2026-04-12)
+
+### Bug Fixes
+
+* remove last remaining releases_created=false from release-pr.sh
+
 ## 0.7.0 (2026-04-12)
 
 ### ⚠ BREAKING CHANGES

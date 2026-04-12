@@ -3,8 +3,8 @@ use serde_json::json;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
-#[command(name = "rustlease-please")]
-#[command(about = "Automated release management — a Rust reimplementation of release-please")]
+#[command(name = "synthase")]
+#[command(about = "Automated release management using conventional commits")]
 #[command(version)]
 struct Cli {
     /// Path to the git repository (defaults to current directory)
@@ -31,7 +31,7 @@ enum Commands {
     /// Output release information for tags/releases (JSON output)
     Release,
 
-    /// Initialize release-please configuration for a repository
+    /// Initialize synthase configuration for a repository
     Bootstrap {
         /// Release type (e.g., "rust", "node", "simple", "python", "go")
         #[arg(long, default_value = "simple")]
@@ -71,7 +71,7 @@ fn cmd_release_pr(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         .canonicalize()
         .unwrap_or_else(|_| PathBuf::from(&cli.repo_path));
 
-    let output = rustlease_please::manifest::process_repo(&repo_path)?;
+    let output = synthase::manifest::process_repo(&repo_path)?;
 
     if output.releases.is_empty() {
         eprintln!("No releases to create.");
@@ -85,12 +85,12 @@ fn cmd_release_pr(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
-    let config_path = repo_path.join("release-please-config.json");
-    let config = rustlease_please::config::load_config(&config_path)?;
+    let config_path = repo_path.join("synthase-config.json");
+    let config = synthase::config::load_config(&config_path)?;
 
     let pr_title =
-        rustlease_please::manifest::format_pr_title(&output.releases, &config, &cli.target_branch);
-    let pr_body = rustlease_please::manifest::format_pr_body(&output.releases, &config);
+        synthase::manifest::format_pr_title(&output.releases, &config, &cli.target_branch);
+    let pr_body = synthase::manifest::format_pr_body(&output.releases, &config);
 
     let releases_json = build_releases_json(&output.releases);
     let all_files = build_files_json(&output);
@@ -100,7 +100,7 @@ fn cmd_release_pr(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         "pull_requests": [{
             "title": pr_title,
             "body": pr_body,
-            "branch": format!("release-please--branches--{}", cli.target_branch),
+            "branch": format!("synthase--branches--{}", cli.target_branch),
             "files": all_files,
         }],
     });
@@ -125,7 +125,7 @@ fn cmd_release(cli: &Cli) -> Result<(), Box<dyn std::error::Error>> {
         .canonicalize()
         .unwrap_or_else(|_| PathBuf::from(&cli.repo_path));
 
-    let output = rustlease_please::manifest::process_repo(&repo_path)?;
+    let output = synthase::manifest::process_repo(&repo_path)?;
 
     if output.releases.is_empty() {
         eprintln!("No releases found.");
@@ -169,8 +169,8 @@ fn cmd_bootstrap(
         .canonicalize()
         .unwrap_or_else(|_| PathBuf::from(&cli.repo_path));
 
-    let config_path = repo_path.join("release-please-config.json");
-    let manifest_path = repo_path.join(".release-please-manifest.json");
+    let config_path = repo_path.join("synthase-config.json");
+    let manifest_path = repo_path.join(".synthase-manifest.json");
 
     if config_path.exists() {
         eprintln!("Config file already exists: {}", config_path.display());
@@ -230,7 +230,7 @@ fn cmd_bootstrap(
 // ---------------------------------------------------------------------------
 
 fn build_releases_json(
-    releases: &[rustlease_please::manifest::ComponentRelease],
+    releases: &[synthase::manifest::ComponentRelease],
 ) -> Vec<serde_json::Value> {
     releases
         .iter()
@@ -250,7 +250,7 @@ fn build_releases_json(
         .collect()
 }
 
-fn build_files_json(output: &rustlease_please::manifest::ReleaseOutput) -> Vec<serde_json::Value> {
+fn build_files_json(output: &synthase::manifest::ReleaseOutput) -> Vec<serde_json::Value> {
     let mut files = Vec::new();
     for release in &output.releases {
         for update in &release.file_updates {
@@ -273,7 +273,7 @@ fn build_files_json(output: &rustlease_please::manifest::ReleaseOutput) -> Vec<s
 
 fn apply_file_updates(
     repo_path: &Path,
-    output: &rustlease_please::manifest::ReleaseOutput,
+    output: &synthase::manifest::ReleaseOutput,
 ) -> Result<(), Box<dyn std::error::Error>> {
     for release in &output.releases {
         for update in &release.file_updates {

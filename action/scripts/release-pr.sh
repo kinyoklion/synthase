@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# release-pr.sh — Create or update a release PR from rustlease-please CLI output.
+# release-pr.sh — Create or update a release PR from synthase CLI output.
 #
 # Expected environment variables:
-#   RUSTLEASE_BIN   — path to the rustlease-please binary
+#   SYNTHASE_BIN   — path to the synthase binary
 #   TARGET_BRANCH   — target branch for the release PR
 #   GH_TOKEN        — GitHub token for API access
 #   GITHUB_OUTPUT   — path to the GitHub Actions output file
@@ -11,8 +11,8 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # 1. Run the CLI in dry-run mode to get the release plan
 # ---------------------------------------------------------------------------
-echo "::group::Running rustlease-please release-pr"
-CLI_OUTPUT=$("$RUSTLEASE_BIN" \
+echo "::group::Running synthase release-pr"
+CLI_OUTPUT=$("$SYNTHASE_BIN" \
   --repo-path . \
   --target-branch "$TARGET_BRANCH" \
   --dry-run \

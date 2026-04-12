@@ -13,7 +13,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  # Phase 1: Run rustlease-please — creates draft releases OR updates release PRs
+  # Phase 1: Run synthase — creates draft releases OR updates release PRs
   release:
     runs-on: ubuntu-latest
     outputs:
@@ -58,15 +58,15 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          cp target/release/rustlease-please rustlease-please-linux-x64
-          chmod +x rustlease-please-linux-x64
+          cp target/release/synthase synthase-linux-x64
+          chmod +x synthase-linux-x64
 
       - name: Upload binary to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ needs.release.outputs.tag_name }}" \
-            rustlease-please-linux-x64 \
+            synthase-linux-x64 \
             --clobber
 
   # Phase 3: Publish — take the release out of draft

@@ -1,9 +1,9 @@
 # Configuration Reference
 
-Rustlease-please uses two JSON files in the repository root:
+Synthase uses two JSON files in the repository root:
 
-- `release-please-config.json` - Release configuration
-- `.release-please-manifest.json` - Current version tracking
+- `synthase-config.json` - Release configuration
+- `.synthase-manifest.json` - Current version tracking
 
 ## Manifest File
 
@@ -16,7 +16,7 @@ The manifest is a simple JSON object mapping package paths to version strings:
 }
 ```
 
-This file is automatically updated by release PRs. You typically create it once (via `rustlease-please bootstrap` or manually) and let the tool manage it.
+This file is automatically updated by release PRs. You typically create it once (via `synthase bootstrap` or manually) and let the tool manage it.
 
 ## Config File
 
@@ -103,7 +103,7 @@ Fields can be set at the root level (defaults for all packages) or per-package (
 |-------|------|---------|-------------|
 | `pull-request-title-pattern` | string | `"chore(${branch}): release${component} ${version}"` | PR title template. Variables: `${branch}`, `${component}`, `${version}` |
 | `pull-request-header` | string | `:robot: I have created a release *beep* *boop*` | PR body header |
-| `pull-request-footer` | string | (link to rustlease-please) | PR body footer |
+| `pull-request-footer` | string | (link to synthase) | PR body footer |
 | `separate-pull-requests` | boolean | `false` | Create separate PRs per package in monorepos |
 | `draft-pull-request` | boolean | `false` | Create PRs in draft mode |
 
@@ -130,7 +130,7 @@ Extra files can be specified as:
 { "extra-files": ["src/version.h"] }
 ```
 
-The file must contain `x-release-please-version` annotations. See [annotation markers](#annotation-markers).
+The file must contain `x-synthase-version` annotations. See [annotation markers](#annotation-markers).
 
 **Typed object** - targets specific values:
 ```json
@@ -152,10 +152,10 @@ For `extra-files` using the generic updater, add markers to your files:
 
 ### Inline Marker
 
-Place `x-release-please-version` on the same line as the version:
+Place `x-synthase-version` on the same line as the version:
 
 ```
-const VERSION = "1.0.0"; // x-release-please-version
+const VERSION = "1.0.0"; // x-synthase-version
 ```
 
 ### Block Markers
@@ -163,9 +163,9 @@ const VERSION = "1.0.0"; // x-release-please-version
 Wrap a section with start/end markers:
 
 ```
-# x-release-please-start-version
+# x-synthase-start-version
 version = 1.0.0
-# x-release-please-end
+# x-synthase-end
 ```
 
 All semantic version patterns between the markers are replaced with the new version.

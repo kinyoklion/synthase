@@ -1,4 +1,4 @@
-// rustlease-please: core library for automated release management
+// synthase: core library for automated release management
 
 // Phase 1: Core Foundations
 pub mod commit;

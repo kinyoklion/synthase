@@ -1,4 +1,4 @@
-# Rustlease Please — GitHub Action
+# Synthase — GitHub Action
 
 A GitHub Action for automated release management using conventional commits. Supports immutable (draft) releases with artifact upload before publishing.
 
@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         id: release
 
   # Build and upload artifacts only when a release is created
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         with:
           command: publish
           tag-name: ${{ needs.release.outputs.tag_name }}
@@ -83,8 +83,8 @@ This ensures releases are never published without their artifacts attached.
 | `command` | Command to run (see above) | `release` |
 | `target-branch` | Branch to create release PRs against | Repository default branch |
 | `tag-name` | Tag name for the publish command | (auto-detect) |
-| `config-file` | Path to `release-please-config.json` | `release-please-config.json` |
-| `manifest-file` | Path to `.release-please-manifest.json` | `.release-please-manifest.json` |
+| `config-file` | Path to `synthase-config.json` | `synthase-config.json` |
+| `manifest-file` | Path to `.synthase-manifest.json` | `.synthase-manifest.json` |
 | `cli-version` | CLI version to use (`build` to compile from source) | Latest published |
 
 ## Outputs
@@ -107,7 +107,7 @@ This ensures releases are never published without their artifacts attached.
 
 ## Immutable Releases
 
-The action creates releases in **draft mode** by default (when `draft: true` is set in `release-please-config.json`). This means:
+The action creates releases in **draft mode** by default (when `draft: true` is set in `synthase-config.json`). This means:
 
 1. The release is created with tag and notes, but not visible to users
 2. Your workflow can build and upload artifacts to the draft release

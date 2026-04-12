@@ -46,14 +46,49 @@ pub struct ComponentRelease {
 pub struct ReleaseOutput {
     /// Per-component release information.
     pub releases: Vec<ComponentRelease>,
-    /// Updated .release-please-manifest.json content.
+    /// Updated manifest (.synthase-manifest.json) content.
     pub manifest_update: Option<FileUpdate>,
+}
+
+/// Config filename (preferred).
+pub const DEFAULT_CONFIG_FILE: &str = "synthase-config.json";
+/// Legacy config filename (for release-please compatibility).
+pub const LEGACY_CONFIG_FILE: &str = "release-please-config.json";
+/// Manifest filename (preferred).
+pub const DEFAULT_MANIFEST_FILE: &str = ".synthase-manifest.json";
+/// Legacy manifest filename (for release-please compatibility).
+pub const LEGACY_MANIFEST_FILE: &str = ".release-please-manifest.json";
+
+/// Resolve the config file path, preferring new name but falling back to legacy.
+pub fn resolve_config_path(repo_path: &Path) -> std::path::PathBuf {
+    let new = repo_path.join(DEFAULT_CONFIG_FILE);
+    if new.exists() {
+        return new;
+    }
+    let old = repo_path.join(LEGACY_CONFIG_FILE);
+    if old.exists() {
+        return old;
+    }
+    new // default to new name
+}
+
+/// Resolve the manifest file path, preferring new name but falling back to legacy.
+pub fn resolve_manifest_path(repo_path: &Path) -> std::path::PathBuf {
+    let new = repo_path.join(DEFAULT_MANIFEST_FILE);
+    if new.exists() {
+        return new;
+    }
+    let old = repo_path.join(LEGACY_MANIFEST_FILE);
+    if old.exists() {
+        return old;
+    }
+    new // default to new name
 }
 
 /// Process a repository and compute releases for all configured packages.
 pub fn process_repo(repo_path: &Path) -> Result<ReleaseOutput> {
-    let config_path = repo_path.join("release-please-config.json");
-    let manifest_path = repo_path.join(".release-please-manifest.json");
+    let config_path = resolve_config_path(repo_path);
+    let manifest_path = resolve_manifest_path(repo_path);
 
     let manifest_config = config::load_config(&config_path)?;
     let manifest_versions = if manifest_path.exists() {
@@ -299,7 +334,7 @@ fn filter_commits_after_sha<'a>(commits: &[&'a GitCommit], sha: &str) -> Vec<&'a
     result
 }
 
-/// Build the updated .release-please-manifest.json content.
+/// Build the updated manifest content.
 fn build_manifest_update(
     existing: &HashMap<String, String>,
     releases: &[ComponentRelease],
@@ -319,7 +354,7 @@ fn build_manifest_update(
     let content = serde_json::to_string_pretty(&manifest)? + "\n";
 
     Ok(Some(FileUpdate {
-        path: ".release-please-manifest.json".to_string(),
+        path: DEFAULT_MANIFEST_FILE.to_string(),
         content,
         create_if_missing: true,
     }))
@@ -398,7 +433,9 @@ pub fn format_pr_body(releases: &[ComponentRelease], config: &ManifestConfig) ->
         .first()
         .and_then(|r| r.config.pull_request_footer.as_deref())
         .or(config.defaults.pull_request_footer.as_deref())
-        .unwrap_or("This PR was generated with [Rustlease Please](https://github.com/rustlease-please/rustlease-please).");
+        .unwrap_or(
+            "This PR was generated with [Synthase](https://github.com/kinyoklion/synthase).",
+        );
     body.push_str(footer);
     body.push('\n');
 
@@ -441,9 +478,8 @@ mod tests {
         repo.write_file("src/lib.rs", "// new feature");
         repo.add_and_commit("feat: add new feature");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -462,9 +498,8 @@ mod tests {
         repo.write_file("src/lib.rs", "// fix");
         repo.add_and_commit("fix: resolve bug");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -479,9 +514,8 @@ mod tests {
         repo.write_file("README.md", "updated");
         repo.add_and_commit("chore: update readme");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -496,9 +530,8 @@ mod tests {
         repo.write_file("src/lib.rs", "// feature");
         repo.add_and_commit("feat: add feature");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -537,9 +570,8 @@ mod tests {
         repo.write_file("packages/b/lib.rs", "// fix");
         repo.add_and_commit("fix: b fix");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -587,9 +619,8 @@ mod tests {
         repo.write_file("packages/a/lib.rs", "// feat");
         repo.add_and_commit("feat: a feature");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -605,9 +636,8 @@ mod tests {
         repo.write_file("src/lib.rs", "// feat");
         repo.add_and_commit("feat: feature");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 

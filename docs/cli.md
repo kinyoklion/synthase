@@ -2,7 +2,7 @@
 
 ## Installation
 
-Download the pre-built binary from [GitHub Releases](https://github.com/kinyoklion/rustlease-please/releases), or build from source:
+Download the pre-built binary from [GitHub Releases](https://github.com/kinyoklion/synthase/releases), or build from source:
 
 ```bash
 cargo install --path crates/cli
@@ -25,13 +25,13 @@ cargo install --path crates/cli
 Compute the next release and output PR information as JSON.
 
 ```bash
-rustlease-please release-pr
-rustlease-please --dry-run release-pr
-rustlease-please --repo-path /path/to/repo release-pr
+synthase release-pr
+synthase --dry-run release-pr
+synthase --repo-path /path/to/repo release-pr
 ```
 
 **What it does:**
-1. Reads `release-please-config.json` and `.release-please-manifest.json`
+1. Reads `synthase-config.json` and `.synthase-manifest.json`
 2. Walks git history from HEAD to the last release tag
 3. Parses conventional commits to determine version bump
 4. Generates changelog entries
@@ -62,7 +62,7 @@ rustlease-please --repo-path /path/to/repo release-pr
     {
       "title": "chore(main): release my-package 1.1.0",
       "body": ":robot: I have created a release ...",
-      "branch": "release-please--branches--main",
+      "branch": "synthase--branches--main",
       "files": [
         {
           "path": "CHANGELOG.md",
@@ -80,7 +80,7 @@ rustlease-please --repo-path /path/to/repo release-pr
 Output release information for creating GitHub releases.
 
 ```bash
-rustlease-please release
+synthase release
 ```
 
 **JSON output format:**
@@ -106,7 +106,7 @@ rustlease-please release
 Initialize release-please configuration for a repository.
 
 ```bash
-rustlease-please bootstrap --release-type rust --initial-version 0.1.0 --component my-crate
+synthase bootstrap --release-type rust --initial-version 0.1.0 --component my-crate
 ```
 
 | Flag | Default | Description |
@@ -116,7 +116,7 @@ rustlease-please bootstrap --release-type rust --initial-version 0.1.0 --compone
 | `--component <NAME>` | (none) | Component/package name |
 
 **Creates:**
-- `release-please-config.json`
-- `.release-please-manifest.json`
+- `synthase-config.json`
+- `.synthase-manifest.json`
 
 Skips creation if config file already exists.

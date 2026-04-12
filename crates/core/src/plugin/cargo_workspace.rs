@@ -573,9 +573,8 @@ version = "1.0.0"
         repo.write_file("crates/b/src/lib.rs", "// new");
         repo.add_and_commit("feat: b feature");
 
-        let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-        let manifest =
-            config::load_manifest(&repo.path().join(".release-please-manifest.json")).unwrap();
+        let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+        let manifest = config::load_manifest(&repo.path().join(".synthase-manifest.json")).unwrap();
 
         let output =
             crate::manifest::process_repo_with_config(repo.path(), &config, &manifest).unwrap();

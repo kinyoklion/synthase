@@ -2,7 +2,7 @@
 
 Plugins post-process releases to handle cross-package concerns like workspace dependency cascading and version linking. They run after individual package releases are computed.
 
-Configure plugins in `release-please-config.json`:
+Configure plugins in `synthase-config.json`:
 
 ```json
 {

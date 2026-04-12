@@ -80,7 +80,7 @@ pub struct ReleaserConfig {
     pub force_tag_creation: Option<bool>,
 }
 
-/// Top-level `release-please-config.json` structure.
+/// Top-level config (synthase-config.json or release-please-config.json) structure.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct ManifestConfig {
@@ -175,7 +175,7 @@ pub struct ResolvedConfig {
     pub force_tag_creation: bool,
 }
 
-/// Load and parse `release-please-config.json` from disk.
+/// Load and parse the config file from disk.
 pub fn load_config(path: &Path) -> Result<ManifestConfig> {
     let content = std::fs::read_to_string(path).map_err(|e| {
         Error::Config(format!(
@@ -188,7 +188,7 @@ pub fn load_config(path: &Path) -> Result<ManifestConfig> {
     Ok(config)
 }
 
-/// Load and parse `.release-please-manifest.json` from disk.
+/// Load and parse the manifest file from disk.
 ///
 /// Returns a map of path → version string.
 pub fn load_manifest(path: &Path) -> Result<HashMap<String, String>> {
@@ -511,7 +511,7 @@ mod tests {
     fn test_load_config_from_file() {
         // Use TestRepo to create a file on disk
         let dir = tempfile::TempDir::new().unwrap();
-        let config_path = dir.path().join("release-please-config.json");
+        let config_path = dir.path().join("synthase-config.json");
         std::fs::write(
             &config_path,
             r#"{"release-type": "rust", "packages": {".": {}}}"#,
@@ -531,7 +531,7 @@ mod tests {
     #[test]
     fn test_load_manifest_from_file() {
         let dir = tempfile::TempDir::new().unwrap();
-        let manifest_path = dir.path().join(".release-please-manifest.json");
+        let manifest_path = dir.path().join(".synthase-manifest.json");
         std::fs::write(&manifest_path, r#"{".": "1.0.0"}"#).unwrap();
 
         let manifest = load_manifest(&manifest_path).unwrap();

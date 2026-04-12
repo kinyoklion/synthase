@@ -169,7 +169,6 @@ git checkout "$TARGET_BRANCH" 2>/dev/null || git checkout - 2>/dev/null || true
 # ---------------------------------------------------------------------------
 # 6. Set outputs
 # ---------------------------------------------------------------------------
-echo "releases_created=false" >> "$GITHUB_OUTPUT"
 echo "prs_created=true" >> "$GITHUB_OUTPUT"
 echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
 echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"

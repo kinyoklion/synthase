@@ -225,23 +225,24 @@ fn re_indent_json(json: &str, indent: &str) -> String {
 // Generic annotation-based updater
 // ---------------------------------------------------------------------------
 
+// Supports both x-synthase-* and x-release-please-* markers for compatibility
 static INLINE_VERSION_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"x-release-please-version").unwrap());
+    LazyLock::new(|| Regex::new(r"x-(synthase|release-please)-version").unwrap());
 
 static BLOCK_START_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"x-release-please-start-version").unwrap());
+    LazyLock::new(|| Regex::new(r"x-(synthase|release-please)-start-version").unwrap());
 
 static BLOCK_END_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"x-release-please-end").unwrap());
+    LazyLock::new(|| Regex::new(r"x-(synthase|release-please)-end").unwrap());
 
 static SEMVER_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?").unwrap());
 
-/// Update version strings in a file using release-please annotation markers.
+/// Update version strings in a file using annotation markers.
 ///
-/// Supports:
-/// - Inline: `x-release-please-version` on the same line as a version string
-/// - Block: `x-release-please-start-version` ... `x-release-please-end`
+/// Supports both `x-synthase-*` and `x-release-please-*` markers:
+/// - Inline: `x-synthase-version` on the same line as a version string
+/// - Block: `x-synthase-start-version` ... `x-synthase-end`
 pub fn update_generic_version(content: &str, new_version: &str) -> String {
     let mut result = Vec::new();
     let mut in_block = false;

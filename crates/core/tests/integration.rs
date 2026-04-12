@@ -4,19 +4,19 @@
 //! and config files, then runs `process_repo_with_config()` and asserts on
 //! the output.
 
-use rustlease_please::config;
-use rustlease_please::manifest::process_repo_with_config;
-use rustlease_please::testutil::TestRepo;
 use semver::Version;
 use std::collections::HashMap;
+use synthase::config;
+use synthase::manifest::process_repo_with_config;
+use synthase::testutil::TestRepo;
 
 // ===========================================================================
 // Helpers
 // ===========================================================================
 
 fn load_config_and_manifest(repo: &TestRepo) -> (config::ManifestConfig, HashMap<String, String>) {
-    let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
-    let manifest_path = repo.path().join(".release-please-manifest.json");
+    let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
+    let manifest_path = repo.path().join(".synthase-manifest.json");
     let manifest = if manifest_path.exists() {
         config::load_manifest(&manifest_path).unwrap()
     } else {
@@ -166,7 +166,7 @@ fn test_initial_release_no_prior_tags() {
     repo.write_file("README.md", "# New Package");
     repo.add_and_commit("feat: initial feature");
 
-    let config = config::load_config(&repo.path().join("release-please-config.json")).unwrap();
+    let config = config::load_config(&repo.path().join("synthase-config.json")).unwrap();
     let manifest = HashMap::new();
     let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
@@ -558,10 +558,10 @@ fn test_pr_title_single_package() {
     let (config, manifest) = load_config_and_manifest(&repo);
     let output = process_repo_with_config(repo.path(), &config, &manifest).unwrap();
 
-    let title = rustlease_please::manifest::format_pr_title(&output.releases, &config, "main");
+    let title = synthase::manifest::format_pr_title(&output.releases, &config, "main");
     assert_eq!(title, "chore(main): release my-tool 1.1.0");
 
-    let body = rustlease_please::manifest::format_pr_body(&output.releases, &config);
+    let body = synthase::manifest::format_pr_body(&output.releases, &config);
     assert!(body.contains(":robot:"));
     assert!(body.contains("### Features"));
     assert!(!body.contains("<details>")); // single component, no collapsible

@@ -2,7 +2,7 @@
 # release.sh — Create GitHub releases from merged release PRs.
 #
 # Expected environment variables:
-#   RUSTLEASE_BIN   — path to the rustlease-please binary
+#   SYNTHASE_BIN   — path to the synthase binary
 #   TARGET_BRANCH   — target branch
 #   GH_TOKEN        — GitHub token for API access
 #   GITHUB_OUTPUT   — path to the GitHub Actions output file
@@ -40,7 +40,7 @@ echo "::endgroup::"
 # ---------------------------------------------------------------------------
 echo "::group::Computing release information"
 
-CLI_OUTPUT=$("$RUSTLEASE_BIN" \
+CLI_OUTPUT=$("$SYNTHASE_BIN" \
   --repo-path . \
   --target-branch "$TARGET_BRANCH" \
   release 2>/dev/null)

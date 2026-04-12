@@ -1,10 +1,10 @@
 [package]
-name = "rustlease-please"
+name = "synthase"
 version = "0.6.0"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "A Rust reimplementation of release-please for automated release management"
+description = "Automated release management using conventional commits"
 
 [dependencies]
 git2 = { workspace = true }
@@ -27,4 +27,4 @@ optional = true
 [dev-dependencies]
 tempfile = { workspace = true }
 pretty_assertions = { workspace = true }
-rustlease-please = { path = ".", features = ["testutil"] }
+synthase = { path = ".", features = ["testutil"] }

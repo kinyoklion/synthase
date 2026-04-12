@@ -97,16 +97,16 @@ impl TestRepo {
             .expect("failed to create tag");
     }
 
-    /// Write a `release-please-config.json` file in the repo root.
+    /// Write a config file (synthase-config.json) file in the repo root.
     pub fn write_config(&self, config: &serde_json::Value) {
         let content = serde_json::to_string_pretty(config).expect("failed to serialize config");
-        self.write_file("release-please-config.json", &content);
+        self.write_file("synthase-config.json", &content);
     }
 
-    /// Write a `.release-please-manifest.json` file in the repo root.
+    /// Write a manifest file (.synthase-manifest.json) file in the repo root.
     pub fn write_manifest(&self, manifest: &serde_json::Value) {
         let content = serde_json::to_string_pretty(manifest).expect("failed to serialize manifest");
-        self.write_file(".release-please-manifest.json", &content);
+        self.write_file(".synthase-manifest.json", &content);
     }
 
     /// Returns the working directory path of the repository.
@@ -186,12 +186,12 @@ mod tests {
 
         // Verify files exist and are valid JSON
         let config_content =
-            fs::read_to_string(test_repo.path().join("release-please-config.json")).unwrap();
+            fs::read_to_string(test_repo.path().join("synthase-config.json")).unwrap();
         let parsed_config: serde_json::Value = serde_json::from_str(&config_content).unwrap();
         assert_eq!(parsed_config["release-type"], "rust");
 
         let manifest_content =
-            fs::read_to_string(test_repo.path().join(".release-please-manifest.json")).unwrap();
+            fs::read_to_string(test_repo.path().join(".synthase-manifest.json")).unwrap();
         let parsed_manifest: serde_json::Value = serde_json::from_str(&manifest_content).unwrap();
         assert_eq!(parsed_manifest["."], "1.0.0");
     }

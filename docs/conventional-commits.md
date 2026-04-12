@@ -1,6 +1,6 @@
 # Conventional Commits
 
-Rustlease-please uses [conventional commits](https://www.conventionalcommits.org/) to determine version bumps and generate changelogs.
+Synthase uses [conventional commits](https://www.conventionalcommits.org/) to determine version bumps and generate changelogs.
 
 ## Commit Format
 

@@ -1,6 +1,6 @@
-name: 'Rustlease Please'
+name: 'Synthase'
 description: 'Automated release management — create release PRs and GitHub releases from conventional commits'
-author: 'rustlease-please'
+author: 'synthase'
 
 branding:
   icon: 'package'
@@ -29,17 +29,17 @@ inputs:
     required: false
     default: ''
   config-file:
-    description: 'Path to release-please-config.json.'
+    description: 'Path to synthase-config.json.'
     required: false
-    default: 'release-please-config.json'
+    default: 'synthase-config.json'
   manifest-file:
-    description: 'Path to .release-please-manifest.json.'
+    description: 'Path to .synthase-manifest.json.'
     required: false
-    default: '.release-please-manifest.json'
+    default: '.synthase-manifest.json'
   cli-version:
-    description: 'Version of rustlease-please CLI to use. Set to "build" to build from source.'
+    description: 'Version of synthase CLI to use. Set to "build" to build from source.'
     required: false
-    default: '0.6.0' # x-release-please-version
+    default: '0.6.0' # x-synthase-version
 
 outputs:
   releases_created:
@@ -85,37 +85,37 @@ outputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install rustlease-please CLI (from release)
+    - name: Install synthase CLI (from release)
       if: inputs.cli-version != 'build' && inputs.command != 'publish'
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
       run: |
         VERSION="${{ inputs.cli-version }}"
-        REPO="kinyoklion/rustlease-please"
-        TAG="rustlease-please-v${VERSION}"
+        REPO="kinyoklion/synthase"
+        TAG="synthase-v${VERSION}"
 
-        echo "Downloading rustlease-please ${VERSION} from ${REPO}..."
+        echo "Downloading synthase ${VERSION} from ${REPO}..."
         gh release download "$TAG" \
           --repo "$REPO" \
-          --pattern "rustlease-please-linux-x64" \
+          --pattern "synthase-linux-x64" \
           --dir "${{ runner.temp }}"
 
-        chmod +x "${{ runner.temp }}/rustlease-please-linux-x64"
-        mv "${{ runner.temp }}/rustlease-please-linux-x64" "${{ runner.temp }}/rustlease-please"
-        echo "RUSTLEASE_BIN=${{ runner.temp }}/rustlease-please" >> "$GITHUB_ENV"
-        echo "Installed rustlease-please ${VERSION}"
+        chmod +x "${{ runner.temp }}/synthase-linux-x64"
+        mv "${{ runner.temp }}/synthase-linux-x64" "${{ runner.temp }}/synthase"
+        echo "SYNTHASE_BIN=${{ runner.temp }}/synthase" >> "$GITHUB_ENV"
+        echo "Installed synthase ${VERSION}"
 
-    - name: Build rustlease-please CLI (from source)
+    - name: Build synthase CLI (from source)
       if: inputs.cli-version == 'build' && inputs.command != 'publish'
       shell: bash
       run: |
         rustup toolchain install stable --profile minimal
         cd "${{ github.action_path }}/.."
         cargo build --release
-        echo "RUSTLEASE_BIN=${{ github.action_path }}/../target/release/rustlease-please" >> "$GITHUB_ENV"
+        echo "SYNTHASE_BIN=${{ github.action_path }}/../target/release/synthase" >> "$GITHUB_ENV"
 
-    - name: Run rustlease-please
+    - name: Run synthase
       id: run-command
       shell: bash
       env:

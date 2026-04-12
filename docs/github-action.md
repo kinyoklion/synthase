@@ -2,7 +2,7 @@
 
 ## Overview
 
-The rustlease-please GitHub Action automates release management:
+The synthase GitHub Action automates release management:
 
 1. **On every push to main**: Creates or updates a release PR with version bumps and changelog
 2. **When a release PR is merged**: Creates a draft GitHub release with tag and release notes
@@ -25,8 +25,8 @@ The rustlease-please GitHub Action automates release management:
 | `command` | `release` | Command to run |
 | `target-branch` | (repo default) | Branch to target for releases |
 | `tag-name` | | Tag name for the `publish` command |
-| `config-file` | `release-please-config.json` | Path to config file |
-| `manifest-file` | `.release-please-manifest.json` | Path to manifest |
+| `config-file` | `synthase-config.json` | Path to config file |
+| `manifest-file` | `.synthase-manifest.json` | Path to manifest |
 | `cli-version` | (latest published) | CLI version, or `build` to compile from source |
 
 ## Outputs
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         id: release
 ```
 
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         id: release
 
   build:
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         with:
           command: publish
           tag-name: ${{ needs.release.outputs.tag_name }}
@@ -131,7 +131,7 @@ For monorepos, use `paths_released` to determine which components need builds:
 ```yaml
   release:
     steps:
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         id: release
 
   build-a:
@@ -143,7 +143,7 @@ For monorepos, use `paths_released` to determine which components need builds:
 
 ## Immutable Releases
 
-When `draft: true` is set in `release-please-config.json`, the action creates releases in draft mode. This means:
+When `draft: true` is set in `synthase-config.json`, the action creates releases in draft mode. This means:
 
 1. The release is created with a tag and release notes but is not visible to users
 2. Your workflow builds and uploads artifacts to the draft release
@@ -153,7 +153,7 @@ This guarantees that users never see a release without its artifacts. GitHub doe
 
 ## Self-Hosting
 
-When using the action from the same repository (e.g., to release rustlease-please itself), use `cli-version: build` to compile from source:
+When using the action from the same repository (e.g., to release synthase itself), use `cli-version: build` to compile from source:
 
 ```yaml
 - uses: ./action

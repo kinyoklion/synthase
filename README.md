@@ -1,4 +1,4 @@
-# Rustlease Please
+# Synthase
 
 A Rust reimplementation of [release-please](https://github.com/googleapis/release-please) for automated release management using [conventional commits](https://www.conventionalcommits.org/).
 
@@ -12,7 +12,7 @@ Unlike release-please, the core release logic operates entirely on local git rep
 - Monorepo support with per-package configuration
 - Workspace plugins (Cargo, Node) for dependency cascading
 - Immutable (draft) release support with artifact upload before publishing
-- Compatible with release-please `release-please-config.json` and `.release-please-manifest.json` formats
+- Compatible with release-please `synthase-config.json` (or `release-please-config.json`) and `.synthase-manifest.json` (or `.release-please-manifest.json`) formats
 - Local-first: testable without GitHub
 
 ## Quick Start (GitHub Action)
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         id: release
 
   # Optional: build and upload artifacts when a release is created
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: kinyoklion/rustlease-please@v0
+      - uses: kinyoklion/synthase@v0
         with:
           command: publish
           tag-name: ${{ needs.release.outputs.tag_name }}
@@ -89,20 +89,20 @@ And a manifest to track the current version:
 Or use the CLI to bootstrap:
 
 ```bash
-rustlease-please bootstrap --release-type node --initial-version 1.0.0
+synthase bootstrap --release-type node --initial-version 1.0.0
 ```
 
 ## Quick Start (CLI)
 
 ```bash
 # Compute the next release (dry run)
-rustlease-please --dry-run release-pr
+synthase --dry-run release-pr
 
 # Apply changes to the working tree
-rustlease-please release-pr
+synthase release-pr
 
 # Output release information
-rustlease-please release
+synthase release
 ```
 
 ## Supported Ecosystems
@@ -135,10 +135,10 @@ Any file can also be updated using `extra-files` with [annotation markers](docs/
 
 ## Compatibility
 
-Rustlease-please reads the same configuration files as release-please:
+Synthase reads the same configuration files as release-please:
 
-- `release-please-config.json` - Release configuration
-- `.release-please-manifest.json` - Version tracking
+- `synthase-config.json` (or `release-please-config.json`) - Release configuration
+- `.synthase-manifest.json` (or `.release-please-manifest.json`) - Version tracking
 
 Most configuration options are compatible. See the [configuration reference](docs/configuration.md) for details.
 

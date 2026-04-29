@@ -86,7 +86,7 @@ runs:
   using: 'composite'
   steps:
     - name: Install synthase CLI (from release)
-      if: inputs.cli-version != 'build' && inputs.command != 'publish'
+      if: inputs.cli-version != 'build' && (inputs.command == 'release' || inputs.command == 'release-pr')
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -107,7 +107,7 @@ runs:
         echo "Installed synthase ${VERSION}"
 
     - name: Build synthase CLI (from source)
-      if: inputs.cli-version == 'build' && inputs.command != 'publish'
+      if: inputs.cli-version == 'build' && (inputs.command == 'release' || inputs.command == 'release-pr')
       shell: bash
       run: |
         rustup toolchain install stable --profile minimal

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.3](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.2...synthase-v0.8.3) (2026-05-03)
+
+### Bug Fixes
+
+* fetch tags before release-pr to see Phase 1 boundary
+
 ## [0.8.2](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.1...synthase-v0.8.2) (2026-04-29)
 
 ### Bug Fixes

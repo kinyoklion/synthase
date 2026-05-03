@@ -39,7 +39,7 @@ inputs:
   cli-version:
     description: 'Version of synthase CLI to use. Set to "build" to build from source.'
     required: false
-    default: '0.8.5' # x-synthase-version
+    default: '0.8.6' # x-synthase-version
 
 outputs:
   releases_created:

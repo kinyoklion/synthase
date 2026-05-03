@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.5](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.4...synthase-v0.8.5) (2026-05-03)
+
+### Bug Fixes
+
+* create per-component releases for multi-package release PRs
+
 ## [0.8.4](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.3...synthase-v0.8.4) (2026-05-03)
 
 ### Bug Fixes

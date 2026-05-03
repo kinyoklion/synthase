@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.2](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.1...synthase-v0.8.2) (2026-04-29)
+
+### Bug Fixes
+
+* extract release info from merged PR instead of recomputing
+
 ## [0.8.1](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.0...synthase-v0.8.1) (2026-04-12)
 
 ### Bug Fixes

@@ -787,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "synthase"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "chrono",
  "git2",
@@ -805,7 +805,7 @@ dependencies = [
 
 [[package]]
 name = "synthase-cli"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "clap",
  "serde_json",

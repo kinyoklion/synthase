@@ -56,6 +56,69 @@ pub fn update_cargo_toml_version(content: &str, new_version: &str) -> String {
     }
 }
 
+/// Update the version constraint for a named dependency in a Cargo.toml string.
+///
+/// Handles both inline-table form (`pkg = { version = "x", ... }`) and bare
+/// string form (`pkg = "x"`). Only replaces the first match per package name.
+pub fn update_cargo_toml_dep_version(
+    content: &str,
+    dep_name: &str,
+    new_version: &str,
+) -> String {
+    // Inline table form: dep-name = { ..., version = "x.y.z", ... }
+    // Use a two-step approach: find the dep line, then replace the version inside it.
+    let mut result = String::with_capacity(content.len());
+
+    for line in content.lines() {
+        let trimmed = line.trim_start();
+
+        // Match `dep-name = ...` (with optional whitespace around `=`)
+        let after_name = trimmed
+            .strip_prefix(dep_name)
+            .and_then(|rest| rest.trim_start().strip_prefix('='));
+
+        if let Some(after_eq) = after_name {
+            let after_eq = after_eq.trim_start();
+
+            if after_eq.starts_with('{') {
+                // Inline table: replace `version = "..."` inside the braces
+                let dep_version_re = Regex::new(r#"(version\s*=\s*")([^"]+)(")"#).unwrap();
+                let replaced = dep_version_re
+                    .replace(after_eq, |caps: &regex::Captures| {
+                        format!("{}{}{}", &caps[1], new_version, &caps[3])
+                    })
+                    .to_string();
+                let indent = &line[..line.len() - trimmed.len()];
+                result.push_str(&format!(
+                    "{}{} = {}\n",
+                    indent,
+                    dep_name,
+                    replaced
+                ));
+                continue;
+            } else if after_eq.starts_with('"') {
+                // Bare string form: dep-name = "x.y.z"
+                let indent = &line[..line.len() - trimmed.len()];
+                result.push_str(&format!(
+                    "{}{} = \"{}\"\n",
+                    indent, dep_name, new_version
+                ));
+                continue;
+            }
+        }
+
+        result.push_str(line);
+        result.push('\n');
+    }
+
+    // Preserve lack of trailing newline
+    if !content.ends_with('\n') && result.ends_with('\n') {
+        result.pop();
+    }
+
+    result
+}
+
 // ---------------------------------------------------------------------------
 // Cargo.lock version updater
 // ---------------------------------------------------------------------------

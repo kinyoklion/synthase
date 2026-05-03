@@ -112,32 +112,59 @@ fn update_workspace_member_cargo_tomls(
         None => return Ok(updates),
     };
 
+    // First pass: collect all resolved member paths
+    let mut all_member_paths: Vec<String> = Vec::new();
     for member_val in members {
         let pattern = match member_val.as_str() {
             Some(s) => s,
             None => continue,
         };
+        all_member_paths.extend(resolve_members(repo_path, pattern));
+    }
 
-        // Resolve glob patterns
-        let member_paths = resolve_members(repo_path, pattern);
-        for member_path in member_paths {
-            let cargo_path = repo_path.join(&member_path).join("Cargo.toml");
-            if !cargo_path.exists() {
-                continue;
+    // Collect workspace package names so we can update cross-member dep versions
+    let mut workspace_pkg_names: Vec<String> = Vec::new();
+    for member_path in &all_member_paths {
+        let cargo_path = repo_path.join(member_path).join("Cargo.toml");
+        if let Ok(content) = std::fs::read_to_string(&cargo_path) {
+            if let Ok(parsed) = toml::from_str::<toml::Value>(&content) {
+                if let Some(name) = parsed
+                    .get("package")
+                    .and_then(|p| p.get("name"))
+                    .and_then(|n| n.as_str())
+                {
+                    workspace_pkg_names.push(name.to_string());
+                }
             }
-            let content = std::fs::read_to_string(&cargo_path)?;
-            if !content.contains("[package]") {
-                continue;
-            }
-            let updated = updater::update_cargo_toml_version(&content, new_version);
-            if updated != content {
-                let rel_path = format!("{member_path}/Cargo.toml");
-                updates.push(FileUpdate {
-                    path: rel_path,
-                    content: updated,
-                    create_if_missing: false,
-                });
-            }
+        }
+    }
+
+    // Second pass: update each member's [package] version and internal dep versions
+    for member_path in &all_member_paths {
+        let cargo_path = repo_path.join(member_path).join("Cargo.toml");
+        if !cargo_path.exists() {
+            continue;
+        }
+        let content = std::fs::read_to_string(&cargo_path)?;
+        if !content.contains("[package]") {
+            continue;
+        }
+
+        // Update [package] version
+        let mut updated = updater::update_cargo_toml_version(&content, new_version);
+
+        // Update version constraints for other workspace members in [dependencies] etc.
+        for pkg_name in &workspace_pkg_names {
+            updated = updater::update_cargo_toml_dep_version(&updated, pkg_name, new_version);
+        }
+
+        if updated != content {
+            let rel_path = format!("{member_path}/Cargo.toml");
+            updates.push(FileUpdate {
+                path: rel_path,
+                content: updated,
+                create_if_missing: false,
+            });
         }
     }
 

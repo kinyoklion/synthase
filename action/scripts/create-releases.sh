@@ -59,8 +59,79 @@ fi
 
 FIRST_TAG=""
 FIRST_VERSION=""
-ALL_RELEASES="[]"
-ALL_PATHS="[]"
+
+# ---------------------------------------------------------------------------
+# Helper: build tag name from component, version, and config
+# ---------------------------------------------------------------------------
+build_tag() {
+  local component="$1"
+  local version="$2"
+  local tag
+  if [ -n "$component" ]; then
+    tag="${component}-v${version}"
+  else
+    tag="v${version}"
+  fi
+  if [ -f "$CONFIG_FILE" ]; then
+    local include_v tag_sep
+    include_v=$(jq -r '."include-v-in-tag" // true' "$CONFIG_FILE")
+    tag_sep=$(jq -r '."tag-separator" // "-"' "$CONFIG_FILE")
+    if [ "$include_v" = "false" ]; then
+      if [ -n "$component" ]; then
+        tag="${component}${tag_sep}${version}"
+      else
+        tag="${version}"
+      fi
+    fi
+  fi
+  echo "$tag"
+}
+
+# ---------------------------------------------------------------------------
+# Helper: create one GitHub release for a component+version
+# ---------------------------------------------------------------------------
+create_one_release() {
+  local component="$1"
+  local version="$2"
+  local notes="$3"
+  local merge_sha="$4"
+
+  local tag
+  tag=$(build_tag "$component" "$version")
+
+  local release_name
+  if [ -n "$component" ]; then
+    release_name="$component $version"
+  else
+    release_name="$tag"
+  fi
+
+  echo "  Component: ${component:-<none>}"
+  echo "  Version: $version"
+  echo "  Tag: $tag"
+  echo "  Creating release: $release_name"
+
+  local gh_flags=("$tag" --title "$release_name" --notes "$notes" --target "$TARGET_BRANCH")
+  [ "$IS_DRAFT" = "true" ] && gh_flags+=(--draft)
+  [ "$IS_PRERELEASE" = "true" ] && gh_flags+=(--prerelease)
+
+  gh release create "${gh_flags[@]}" || {
+    echo "::warning::Failed to create release for $tag (may already exist)"
+    return
+  }
+
+  # For draft releases GitHub doesn't create git tags automatically; create explicitly.
+  if [ "$IS_DRAFT" = "true" ] && [ -n "$merge_sha" ]; then
+    gh api "repos/{owner}/{repo}/git/refs" \
+      -f ref="refs/tags/$tag" \
+      -f sha="$merge_sha" 2>/dev/null || echo "::warning::Tag $tag may already exist"
+    echo "  Created git tag $tag at $merge_sha (for draft release)"
+  fi
+
+  local release_url
+  release_url=$(gh release view "$tag" --json htmlUrl --jq '.htmlUrl' 2>/dev/null || echo "")
+  echo "  Created: $release_url"
+}
 
 echo "$MERGED_PRS" | jq -c '.[]' | while read -r pr; do
   PR_NUM=$(echo "$pr" | jq -r '.number')
@@ -70,99 +141,60 @@ echo "$MERGED_PRS" | jq -c '.[]' | while read -r pr; do
 
   echo "Processing PR #$PR_NUM: $PR_TITLE"
 
-  # Parse version from PR title
-  # Formats: "chore(main): release <component> <version>" or "chore(main): release <version>"
-  # Extract everything after "release " — could be "component version" or just "version"
+  # Determine single-package vs multi-package PR.
+  # Single-package titles: "chore(main): release [component] X.Y.Z"
+  # Multi-package titles:  "chore: release main" (no semver in title)
   RELEASE_PART=$(echo "$PR_TITLE" | sed -n 's/.*release[[:space:]]*//p')
 
-  if [ -z "$RELEASE_PART" ]; then
-    echo "::warning::Could not parse release info from PR title: $PR_TITLE"
-    continue
-  fi
-
-  # Check if it's "component version" or just "version"
+  # Extract candidate version (last word of RELEASE_PART for single-pkg)
   WORD_COUNT=$(echo "$RELEASE_PART" | wc -w)
   if [ "$WORD_COUNT" -ge 2 ]; then
-    COMPONENT=$(echo "$RELEASE_PART" | awk '{print $1}')
-    VERSION=$(echo "$RELEASE_PART" | awk '{print $2}')
+    CANDIDATE_VERSION=$(echo "$RELEASE_PART" | awk '{print $NF}')
   else
-    COMPONENT=""
-    VERSION="$RELEASE_PART"
+    CANDIDATE_VERSION="$RELEASE_PART"
   fi
 
-  echo "  Component: ${COMPONENT:-<none>}"
-  echo "  Version: $VERSION"
+  # If the candidate doesn't look like a semver, treat as multi-package PR
+  if ! echo "$CANDIDATE_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]'; then
+    echo "  Multi-package PR detected, parsing components from body..."
 
-  # Build tag name from component + version
-  # Match the tag format from the config
-  if [ -n "$COMPONENT" ]; then
-    TAG="${COMPONENT}-v${VERSION}"
-  else
-    TAG="v${VERSION}"
-  fi
+    # Extract "COMPONENT: VERSION" pairs from <details><summary> tags
+    SUMMARIES=$(echo "$PR_BODY" | grep -o '<details><summary>[^<]*</summary>' \
+      | sed 's|<details><summary>||;s|</summary>||')
 
-  # Check config for tag format overrides
-  if [ -f "$CONFIG_FILE" ]; then
-    INCLUDE_V=$(jq -r '."include-v-in-tag" // true' "$CONFIG_FILE")
-    TAG_SEP=$(jq -r '."tag-separator" // "-"' "$CONFIG_FILE")
-    if [ "$INCLUDE_V" = "false" ]; then
-      if [ -n "$COMPONENT" ]; then
-        TAG="${COMPONENT}${TAG_SEP}${VERSION}"
-      else
-        TAG="${VERSION}"
-      fi
+    if [ -z "$SUMMARIES" ]; then
+      echo "::warning::No <details> blocks found in multi-package PR body, skipping"
+      continue
     fi
-  fi
 
-  # Extract release notes from PR body
-  # The body has format: header\n---\n<changelog>\n---\nfooter
-  # For single-component releases, the changelog is between the two --- markers
-  # For multi-component, it's in <details> blocks
-  NOTES=$(echo "$PR_BODY" | awk '/^---$/{n++; next} n==1' | sed '/^$/N;/^\n$/d')
+    echo "$SUMMARIES" | while IFS= read -r summary; do
+      COMP=$(echo "$summary" | awk -F': ' '{print $1}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      VER=$(echo "$summary"  | awk -F': ' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+      [ -z "$COMP" ] || [ -z "$VER" ] && continue
 
-  if [ -z "$NOTES" ]; then
-    NOTES="Release $VERSION"
-  fi
+      # Extract notes: content inside the matching <details> block
+      COMP_NOTES=$(echo "$PR_BODY" | awk \
+        "/<details><summary>${COMP}: ${VER}<\\/summary>/{found=1; next} found && /<\\/details>/{found=0; next} found{print}")
+      [ -z "$COMP_NOTES" ] && COMP_NOTES="Release $VER"
 
-  RELEASE_NAME="$TAG"
-  if [ -n "$COMPONENT" ]; then
-    RELEASE_NAME="$COMPONENT $VERSION"
-  fi
+      create_one_release "$COMP" "$VER" "$COMP_NOTES" "$MERGE_SHA"
+    done
 
-  echo "  Tag: $TAG"
-  echo "  Creating release: $RELEASE_NAME"
+  else
+    # Single-package PR
+    if [ "$WORD_COUNT" -ge 2 ]; then
+      COMPONENT=$(echo "$RELEASE_PART" | awk '{print $1}')
+      VERSION=$(echo "$RELEASE_PART" | awk '{print $2}')
+    else
+      COMPONENT=""
+      VERSION="$RELEASE_PART"
+    fi
 
-  # Build gh release create flags
-  GH_FLAGS=("$TAG" --title "$RELEASE_NAME" --notes "$NOTES" --target "$TARGET_BRANCH")
-  if [ "$IS_DRAFT" = "true" ]; then
-    GH_FLAGS+=(--draft)
-  fi
-  if [ "$IS_PRERELEASE" = "true" ]; then
-    GH_FLAGS+=(--prerelease)
-  fi
+    # Extract release notes (between the two --- markers in the body)
+    NOTES=$(echo "$PR_BODY" | awk '/^---$/{n++; next} n==1' | sed '/^$/N;/^\n$/d')
+    [ -z "$NOTES" ] && NOTES="Release $VERSION"
 
-  gh release create "${GH_FLAGS[@]}" || {
-    echo "::warning::Failed to create release for $TAG (may already exist)"
-    continue
-  }
-
-  # For draft releases, GitHub does not create a git tag until the release
-  # is published. We must create the tag explicitly so the CLI can find the
-  # release boundary on subsequent runs.
-  if [ "$IS_DRAFT" = "true" ] && [ -n "$MERGE_SHA" ]; then
-    gh api "repos/{owner}/{repo}/git/refs" \
-      -f ref="refs/tags/$TAG" \
-      -f sha="$MERGE_SHA" 2>/dev/null || echo "::warning::Tag $TAG may already exist"
-    echo "  Created git tag $TAG at $MERGE_SHA (for draft release)"
-  fi
-
-  RELEASE_URL=$(gh release view "$TAG" --json htmlUrl --jq '.htmlUrl' 2>/dev/null || echo "")
-  echo "  Created: $RELEASE_URL"
-
-  # Track first release for outputs
-  if [ -z "$FIRST_TAG" ]; then
-    FIRST_TAG="$TAG"
-    FIRST_VERSION="$VERSION"
+    create_one_release "$COMPONENT" "$VERSION" "$NOTES" "$MERGE_SHA"
   fi
 done
 
@@ -190,33 +222,42 @@ echo "::endgroup::"
 # Re-extract first release info (variables from while loop are in subshell)
 FIRST_PR=$(echo "$MERGED_PRS" | jq -c '.[0]')
 FIRST_TITLE=$(echo "$FIRST_PR" | jq -r '.title')
+FIRST_BODY=$(echo "$FIRST_PR" | jq -r '.body')
 RELEASE_PART=$(echo "$FIRST_TITLE" | sed -n 's/.*release[[:space:]]*//p')
 WORD_COUNT=$(echo "$RELEASE_PART" | wc -w)
 if [ "$WORD_COUNT" -ge 2 ]; then
-  COMPONENT=$(echo "$RELEASE_PART" | awk '{print $1}')
-  VERSION=$(echo "$RELEASE_PART" | awk '{print $2}')
+  CANDIDATE_VERSION=$(echo "$RELEASE_PART" | awk '{print $NF}')
 else
-  COMPONENT=""
-  VERSION="$RELEASE_PART"
+  CANDIDATE_VERSION="$RELEASE_PART"
 fi
 
-if [ -n "$COMPONENT" ]; then
-  TAG_NAME="${COMPONENT}-v${VERSION}"
-else
-  TAG_NAME="v${VERSION}"
-fi
+if ! echo "$CANDIDATE_VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]'; then
+  # Multi-package: build all tag names (space-separated) from <details> blocks
+  ALL_TAGS=""
+  while IFS= read -r summary; do
+    COMP=$(echo "$summary" | awk -F': ' '{print $1}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    VER=$(echo "$summary"  | awk -F': ' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    [ -z "$COMP" ] || [ -z "$VER" ] && continue
+    t=$(build_tag "$COMP" "$VER")
+    ALL_TAGS="${ALL_TAGS} ${t}"
+  done < <(echo "$FIRST_BODY" | grep -o '<details><summary>[^<]*</summary>' \
+    | sed 's|<details><summary>||;s|</summary>||')
+  TAG_NAME=$(echo "$ALL_TAGS" | xargs)
 
-# Re-check config for tag format
-if [ -f "$CONFIG_FILE" ]; then
-  INCLUDE_V=$(jq -r '."include-v-in-tag" // true' "$CONFIG_FILE")
-  TAG_SEP=$(jq -r '."tag-separator" // "-"' "$CONFIG_FILE")
-  if [ "$INCLUDE_V" = "false" ]; then
-    if [ -n "$COMPONENT" ]; then
-      TAG_NAME="${COMPONENT}${TAG_SEP}${VERSION}"
-    else
-      TAG_NAME="${VERSION}"
-    fi
+  # Use first component for scalar outputs (version, major, minor, patch)
+  FIRST_SUMMARY=$(echo "$FIRST_BODY" | grep -o '<details><summary>[^<]*</summary>' \
+    | head -1 | sed 's|<details><summary>||;s|</summary>||')
+  COMPONENT=$(echo "$FIRST_SUMMARY" | awk -F': ' '{print $1}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+  VERSION=$(echo "$FIRST_SUMMARY"  | awk -F': ' '{print $2}' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+else
+  if [ "$WORD_COUNT" -ge 2 ]; then
+    COMPONENT=$(echo "$RELEASE_PART" | awk '{print $1}')
+    VERSION=$(echo "$RELEASE_PART" | awk '{print $2}')
+  else
+    COMPONENT=""
+    VERSION="$RELEASE_PART"
   fi
+  TAG_NAME=$(build_tag "$COMPONENT" "$VERSION")
 fi
 
 MAJOR=$(echo "$VERSION" | cut -d. -f1)
@@ -231,9 +272,10 @@ echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
 echo "minor=$MINOR" >> "$GITHUB_OUTPUT"
 echo "patch=$PATCH" >> "$GITHUB_OUTPUT"
 
-# Get release URLs
-UPLOAD_URL=$(gh release view "$TAG_NAME" --json uploadUrl --jq '.uploadUrl' 2>/dev/null || echo "")
-HTML_URL=$(gh release view "$TAG_NAME" --json htmlUrl --jq '.htmlUrl' 2>/dev/null || echo "")
+# Get release URLs (use first tag for upload_url/html_url outputs)
+FIRST_TAG_NAME=$(echo "$TAG_NAME" | awk '{print $1}')
+UPLOAD_URL=$(gh release view "$FIRST_TAG_NAME" --json uploadUrl --jq '.uploadUrl' 2>/dev/null || echo "")
+HTML_URL=$(gh release view "$FIRST_TAG_NAME" --json htmlUrl --jq '.htmlUrl' 2>/dev/null || echo "")
 echo "upload_url=$UPLOAD_URL" >> "$GITHUB_OUTPUT"
 echo "html_url=$HTML_URL" >> "$GITHUB_OUTPUT"
 

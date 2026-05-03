@@ -10,10 +10,12 @@ set -euo pipefail
 echo "::group::Publishing releases"
 
 if [ -n "${TAG_NAME:-}" ]; then
-  # Publish a specific release by tag
-  echo "Publishing release: $TAG_NAME"
-  gh release edit "$TAG_NAME" --draft=false
-  echo "Published $TAG_NAME"
+  # TAG_NAME may be a single tag or a space-separated list (multi-package releases)
+  for tag in $TAG_NAME; do
+    echo "Publishing release: $tag"
+    gh release edit "$tag" --draft=false
+    echo "Published $tag"
+  done
 else
   # Find and publish all draft releases created by this action
   echo "No tag specified — finding draft releases to publish..."

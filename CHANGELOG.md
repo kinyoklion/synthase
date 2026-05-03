@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.6](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.5...synthase-v0.8.6) (2026-05-03)
+
+### Bug Fixes
+
+* match workspace dep cascade by npm package name not component name
+
 ## [0.8.5](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.4...synthase-v0.8.5) (2026-05-03)
 
 ### Bug Fixes

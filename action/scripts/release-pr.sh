@@ -12,6 +12,9 @@ set -euo pipefail
 # 1. Run the CLI in dry-run mode to get the release plan
 # ---------------------------------------------------------------------------
 echo "::group::Running synthase release-pr"
+# Fetch any tags created by Phase 1 (create-releases.sh) so the CLI sees the
+# new release boundary and doesn't recompute the just-released version.
+git fetch --tags --quiet 2>/dev/null || true
 CLI_OUTPUT=$("$SYNTHASE_BIN" \
   --repo-path . \
   --target-branch "$TARGET_BRANCH" \

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.7](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.6...synthase-v0.8.7) (2026-05-03)
+
+### Bug Fixes
+
+* update dep constraints in cascade releases
+
 ## [0.8.6](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.5...synthase-v0.8.6) (2026-05-03)
 
 ### Bug Fixes

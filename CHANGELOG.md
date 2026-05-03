@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.8](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.7...synthase-v0.8.8) (2026-05-03)
+
+### Bug Fixes
+
+* escape special chars in awk component regex for scoped npm packages
+
 ## [0.8.7](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.6...synthase-v0.8.7) (2026-05-03)
 
 ### Bug Fixes

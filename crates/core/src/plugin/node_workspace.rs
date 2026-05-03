@@ -60,8 +60,23 @@ impl Plugin for NodeWorkspacePlugin {
             return Ok(releases);
         }
 
-        // Build map of package name → new version from existing releases
+        // Build map of npm package name → new version by cross-referencing
+        // package paths with the parsed workspace package list.
+        // This is necessary because workspace_deps uses npm names (e.g. "@test/core")
+        // while releases use component names (e.g. "core").
+        let updated_paths: HashMap<String, Version> = releases
+            .iter()
+            .map(|r| (r.package_path.clone(), r.new_version.clone()))
+            .collect();
+
         let mut updated_versions: HashMap<String, Version> = HashMap::new();
+        // Insert by npm package name (looked up via path)
+        for pkg in &packages {
+            if let Some(ver) = updated_paths.get(&pkg.path) {
+                updated_versions.insert(pkg.name.clone(), ver.clone());
+            }
+        }
+        // Also insert by component / package_name for any remaining cases
         for release in &releases {
             if let Some(ref comp) = release.component {
                 updated_versions.insert(comp.clone(), release.new_version.clone());

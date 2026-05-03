@@ -60,11 +60,7 @@ pub fn update_cargo_toml_version(content: &str, new_version: &str) -> String {
 ///
 /// Handles both inline-table form (`pkg = { version = "x", ... }`) and bare
 /// string form (`pkg = "x"`). Only replaces the first match per package name.
-pub fn update_cargo_toml_dep_version(
-    content: &str,
-    dep_name: &str,
-    new_version: &str,
-) -> String {
+pub fn update_cargo_toml_dep_version(content: &str, dep_name: &str, new_version: &str) -> String {
     // Inline table form: dep-name = { ..., version = "x.y.z", ... }
     // Use a two-step approach: find the dep line, then replace the version inside it.
     let mut result = String::with_capacity(content.len());
@@ -89,20 +85,12 @@ pub fn update_cargo_toml_dep_version(
                     })
                     .to_string();
                 let indent = &line[..line.len() - trimmed.len()];
-                result.push_str(&format!(
-                    "{}{} = {}\n",
-                    indent,
-                    dep_name,
-                    replaced
-                ));
+                result.push_str(&format!("{}{} = {}\n", indent, dep_name, replaced));
                 continue;
             } else if after_eq.starts_with('"') {
                 // Bare string form: dep-name = "x.y.z"
                 let indent = &line[..line.len() - trimmed.len()];
-                result.push_str(&format!(
-                    "{}{} = \"{}\"\n",
-                    indent, dep_name, new_version
-                ));
+                result.push_str(&format!("{}{} = \"{}\"\n", indent, dep_name, new_version));
                 continue;
             }
         }

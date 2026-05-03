@@ -2,6 +2,7 @@
   "release-type": "rust",
   "draft": true,
   "bump-minor-pre-major": true,
+  "bootstrap-sha": "feea8d95e58a293c08e8730c195ef5db334b6487",
   "extra-files": ["action/action.yml"],
   "packages": {
     ".": {

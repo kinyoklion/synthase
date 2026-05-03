@@ -173,8 +173,11 @@ echo "$MERGED_PRS" | jq -c '.[]' | while read -r pr; do
       [ -z "$COMP" ] || [ -z "$VER" ] && continue
 
       # Extract notes: content inside the matching <details> block
+      # Use awk -v + index() to avoid regex delimiter issues with special chars (e.g. @scope/pkg)
       COMP_NOTES=$(echo "$PR_BODY" | awk \
-        "/<details><summary>${COMP}: ${VER}<\\/summary>/{found=1; next} found && /<\\/details>/{found=0; next} found{print}")
+        -v target="<details><summary>${COMP}: ${VER}</summary>" \
+        -v endtag="</details>" \
+        'index($0, target){found=1; next} found && index($0, endtag){found=0; next} found{print}')
       [ -z "$COMP_NOTES" ] && COMP_NOTES="Release $VER"
 
       create_one_release "$COMP" "$VER" "$COMP_NOTES" "$MERGE_SHA"

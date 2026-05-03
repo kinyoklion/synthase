@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.8...synthase-v0.9.0) (2026-05-03)
+
+### Features
+
+* support extended changelog descriptions via BEGIN/END_EXTENDED_CHANGELOG markers ([#9](https://github.com/kinyoklion/synthase/issues/9))
+
+  This parser handles all edge cases. See the docs for details.
+
 ## [0.8.8](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.7...synthase-v0.8.8) (2026-05-03)
 
 ### Bug Fixes

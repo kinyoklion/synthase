@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.9.0](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.2...synthase-v0.9.0) (2026-05-03)
+
+### ⚠ BREAKING CHANGES
+
+* rename project from rustlease-please to synthase
+
+### Features
+
+* rename project from rustlease-please to synthase
+* remove third-party GitHub Actions dependencies
+* unify action into single-workflow with immutable release support
+* download pre-built binary instead of building from source
+* implement Phase 8 GitHub Action
+* add node-workspace and sentence-case plugins
+* add Java, Ruby, PHP, Elixir, and Bazel release strategies
+* add Python, Go, Helm, and Dart release strategies
+* implement release and bootstrap CLI commands
+* implement Phase 6 plugin system
+* implement Phase 9 integration test suite
+* implement CLI release-pr command with JSON output
+* implement Phase 5 monorepo orchestration
+* implement Phase 4 MVP file updaters
+* implement Phase 3 changelog generation
+* implement Phase 2 version calculation
+* implement Phase 1 core foundations
+
+### Bug Fixes
+
+* fetch tags before release-pr to see Phase 1 boundary
+* extract release info from merged PR instead of recomputing
+* remove last remaining releases_created=false from release-pr.sh
+* use cli-version: build for self-hosting workflow
+* create git tag for draft releases
+* move x-release-please-version annotation to same line as version
+* release-pr.sh must not overwrite releases_created output
+* fix YAML syntax in release.yml workflow condition
+* only block PR creation on merged pending PRs, not updates
+* update workspace member Cargo.tomls and populate changelog URLs
+* sync Cargo.lock with local Cargo.toml version
+* use rfind instead of filter().next_back() for clippy
+* prevent duplicate release PR after merge
+* pass CI checks — cargo fmt, clippy, and label creation
+* clean working tree before branch checkout in release-pr
+* create autorelease labels before applying to PR
+
 ## [0.8.2](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.1...synthase-v0.8.2) (2026-04-29)
 
 ### Bug Fixes

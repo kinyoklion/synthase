@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.4](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.3...synthase-v0.8.4) (2026-05-03)
+
+### Bug Fixes
+
+* update workspace member dependency versions on release
+
 ## [0.8.3](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.2...synthase-v0.8.3) (2026-05-03)
 
 ### Bug Fixes

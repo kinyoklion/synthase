@@ -12,7 +12,7 @@ pub struct ConventionalCommit {
     pub scope: Option<String>,
     /// The subject line (message after "type(scope): ").
     pub subject: String,
-    /// The commit body (everything after the first blank line, excluding footers).
+    /// The commit body (everything after the first blank line, excluding footers and extended changelog block).
     pub body: Option<String>,
     /// Parsed footers.
     pub footers: Vec<Footer>,
@@ -24,6 +24,8 @@ pub struct ConventionalCommit {
     pub release_as: Option<String>,
     /// Issue/PR references found in the commit.
     pub references: Vec<IssueReference>,
+    /// Extended changelog description from BEGIN_EXTENDED_CHANGELOG / END_EXTENDED_CHANGELOG block.
+    pub extended_description: Option<String>,
 }
 
 /// A commit message footer (key-value pair).
@@ -72,7 +74,21 @@ pub fn parse_conventional_commit(sha: &str, message: &str) -> Option<Conventiona
     let subject = caps["subject"].trim().to_string();
 
     // Split body from header: everything after the first blank line
-    let body_text = extract_body(message);
+    let raw_body_text = extract_body(message);
+
+    // Extract and strip BEGIN/END_EXTENDED_CHANGELOG block before further parsing
+    let (extended_description, body_text) = match raw_body_text {
+        Some(ref text) => {
+            let (desc, stripped) = extract_extended_changelog(text);
+            let stripped_opt = if stripped.trim().is_empty() {
+                None
+            } else {
+                Some(stripped)
+            };
+            (desc, stripped_opt)
+        }
+        None => (None, None),
+    };
 
     // Parse footers from the body
     let (body, footers) = parse_body_and_footers(body_text.as_deref());
@@ -168,6 +184,7 @@ pub fn parse_conventional_commit(sha: &str, message: &str) -> Option<Conventiona
         breaking_description,
         release_as,
         references,
+        extended_description,
     })
 }
 
@@ -249,6 +266,49 @@ fn parse_body_and_footers(body_text: Option<&str>) -> (Option<String>, Vec<Foote
     };
 
     (body, footers)
+}
+
+/// Extract the extended changelog description from a body, returning (description, stripped_body).
+///
+/// Scans for a `BEGIN_EXTENDED_CHANGELOG` / `END_EXTENDED_CHANGELOG` block. The content
+/// between the markers becomes the extended description; the entire block (including markers)
+/// is removed from the returned body string.
+fn extract_extended_changelog(body: &str) -> (Option<String>, String) {
+    const BEGIN: &str = "BEGIN_EXTENDED_CHANGELOG";
+    const END: &str = "END_EXTENDED_CHANGELOG";
+
+    let Some(start) = body.find(BEGIN) else {
+        return (None, body.to_string());
+    };
+
+    let after_begin = &body[start + BEGIN.len()..];
+    // Skip to the start of the next line
+    let content_offset = after_begin
+        .find('\n')
+        .map(|i| i + 1)
+        .unwrap_or(after_begin.len());
+    let content_and_rest = &after_begin[content_offset..];
+
+    let Some(end_rel) = content_and_rest.find(END) else {
+        return (None, body.to_string());
+    };
+
+    let raw_desc = content_and_rest[..end_rel].trim().to_string();
+    let extended = if raw_desc.is_empty() {
+        None
+    } else {
+        Some(raw_desc)
+    };
+
+    // Strip the entire block (from BEGIN up to end of the END line) from body
+    let end_abs = start + BEGIN.len() + content_offset + end_rel + END.len();
+    let after_end = &body[end_abs..];
+    // Consume a trailing newline if present so we don't leave a blank line artifact
+    let after_end = after_end.strip_prefix('\n').unwrap_or(after_end);
+    let stripped = format!("{}{}", body[..start].trim_end(), after_end);
+    let stripped = stripped.trim_end().to_string();
+
+    (extended, stripped)
 }
 
 /// Extract `#N` references from text.
@@ -375,6 +435,52 @@ mod tests {
         assert_eq!(commit.footers[0].value, "42");
         // The number should also be extractable as a reference
         // (the footer value is just "42" since # is part of the separator)
+    }
+
+    #[test]
+    fn test_extended_changelog_extracted() {
+        let msg = "feat: add parser\n\nBEGIN_EXTENDED_CHANGELOG\nThis is the extended description.\nIt has two lines.\nEND_EXTENDED_CHANGELOG";
+        let commit = parse_conventional_commit("abc123", msg).unwrap();
+        assert_eq!(
+            commit.extended_description.as_deref(),
+            Some("This is the extended description.\nIt has two lines.")
+        );
+        // Should not appear in body
+        assert!(commit.body.is_none());
+    }
+
+    #[test]
+    fn test_extended_changelog_with_body_before() {
+        let msg = "feat: add parser\n\nSome context about the change.\n\nBEGIN_EXTENDED_CHANGELOG\nExtended text.\nEND_EXTENDED_CHANGELOG";
+        let commit = parse_conventional_commit("abc123", msg).unwrap();
+        assert_eq!(
+            commit.extended_description.as_deref(),
+            Some("Extended text.")
+        );
+        assert!(commit.body.as_deref().unwrap().contains("Some context"));
+        assert!(!commit
+            .body
+            .as_deref()
+            .unwrap()
+            .contains("BEGIN_EXTENDED_CHANGELOG"));
+    }
+
+    #[test]
+    fn test_extended_changelog_with_footer() {
+        let msg = "feat: add parser\n\nBEGIN_EXTENDED_CHANGELOG\nExtended text.\nEND_EXTENDED_CHANGELOG\n\nCloses: #42";
+        let commit = parse_conventional_commit("abc123", msg).unwrap();
+        assert_eq!(
+            commit.extended_description.as_deref(),
+            Some("Extended text.")
+        );
+        assert_eq!(commit.footers.len(), 1);
+        assert_eq!(commit.footers[0].key, "Closes");
+    }
+
+    #[test]
+    fn test_no_extended_changelog_block() {
+        let commit = parse_conventional_commit("abc123", "feat: add parser").unwrap();
+        assert!(commit.extended_description.is_none());
     }
 
     #[test]

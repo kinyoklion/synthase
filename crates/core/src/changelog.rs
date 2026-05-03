@@ -238,6 +238,20 @@ fn format_commit_line(commit: &ConventionalCommit, options: &ChangelogOptions) -
         line.push_str(&format!(" ([#{}]({}))", reference.number, url));
     }
 
+    // Extended description: indented continuation paragraph under the bullet
+    if let Some(ref desc) = commit.extended_description {
+        line.push_str("\n\n");
+        for desc_line in desc.lines() {
+            line.push_str("  ");
+            line.push_str(desc_line);
+            line.push('\n');
+        }
+        // Trim the trailing newline — the caller adds one after format_commit_line
+        if line.ends_with('\n') {
+            line.pop();
+        }
+    }
+
     line
 }
 
@@ -276,6 +290,7 @@ mod tests {
             breaking_description: None,
             release_as: None,
             references: vec![],
+            extended_description: None,
         }
     }
 
@@ -299,6 +314,7 @@ mod tests {
                 number: pr_number,
                 action: None,
             }],
+            extended_description: None,
         }
     }
 
@@ -455,6 +471,27 @@ mod tests {
         assert!(entry.contains("### New Stuff"));
         assert!(entry.contains("### Fixes"));
         assert!(!entry.contains("### Features")); // not using default name
+    }
+
+    #[test]
+    fn test_extended_description_in_changelog() {
+        let options = make_options();
+        let mut commit = make_commit("feat", None, "add parser", false);
+        commit.extended_description =
+            Some("This parser handles edge cases.\nSee the docs for details.".to_string());
+        let entry = generate_changelog_entry(&[commit], &options);
+        assert!(entry.contains(
+            "* add parser\n\n  This parser handles edge cases.\n  See the docs for details."
+        ));
+    }
+
+    #[test]
+    fn test_no_extended_description_unchanged() {
+        let options = make_options();
+        let commit = make_commit("feat", None, "add parser", false);
+        let entry = generate_changelog_entry(&[commit], &options);
+        assert!(entry.contains("* add parser\n"));
+        assert!(!entry.contains("  "));
     }
 
     #[test]

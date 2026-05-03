@@ -392,6 +392,7 @@ mod tests {
             breaking_description: None,
             release_as: None,
             references: vec![],
+            extended_description: None,
         }
     }
 
@@ -407,6 +408,7 @@ mod tests {
             breaking_description: None,
             release_as: Some(version.to_string()),
             references: vec![],
+            extended_description: None,
         }
     }
 

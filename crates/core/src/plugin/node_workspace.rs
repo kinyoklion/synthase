@@ -115,16 +115,17 @@ impl Plugin for NodeWorkspacePlugin {
             })
             .collect();
 
-        // Create cascade releases
+        // Create cascade releases and update their dep constraints
         for pkg in &packages {
             if let Some(new_version) = cascade_needed.get(&pkg.name) {
-                if let Some(release) = create_cascade_release(
+                if let Some(mut release) = create_cascade_release(
                     pkg,
                     new_version,
                     repo_path,
                     &all_versions,
                     manifest_config,
                 )? {
+                    update_package_json_deps(&mut release, &all_versions);
                     updated_releases.push(release);
                 }
             }

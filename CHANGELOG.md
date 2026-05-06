@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.1](https://github.com/kinyoklion/synthase/compare/synthase-v0.9.0...synthase-v0.9.1) (2026-05-06)
+
+### Bug Fixes
+
+* correct action path to kinyoklion/synthase/action@v0 in docs; fix regex_creation_in_loops clippy warning
+
 ## [0.9.0](https://github.com/kinyoklion/synthase/compare/synthase-v0.8.8...synthase-v0.9.0) (2026-05-03)
 
 ### Features

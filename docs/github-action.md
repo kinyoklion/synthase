@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: kinyoklion/synthase@v0
+      - uses: kinyoklion/synthase/action@v0
         id: release
 ```
 
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: kinyoklion/synthase@v0
+      - uses: kinyoklion/synthase/action@v0
         id: release
 
   build:
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: kinyoklion/synthase@v0
+      - uses: kinyoklion/synthase/action@v0
         with:
           command: publish
           tag-name: ${{ needs.release.outputs.tag_name }}
@@ -131,7 +131,7 @@ For monorepos, use `paths_released` to determine which components need builds:
 ```yaml
   release:
     steps:
-      - uses: kinyoklion/synthase@v0
+      - uses: kinyoklion/synthase/action@v0
         id: release
 
   build-a:

@@ -14,6 +14,9 @@ static CARGO_TOML_VERSION_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?m)^(\s*version\s*=\s*")([^"]+)(")"#).unwrap()
 });
 
+static CARGO_DEP_VERSION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"(version\s*=\s*")([^"]+)(")"#).unwrap());
+
 /// Update the `[package] version` field in a Cargo.toml string.
 ///
 /// Preserves all formatting, comments, and other content. Only replaces the
@@ -78,8 +81,7 @@ pub fn update_cargo_toml_dep_version(content: &str, dep_name: &str, new_version:
 
             if after_eq.starts_with('{') {
                 // Inline table: replace `version = "..."` inside the braces
-                let dep_version_re = Regex::new(r#"(version\s*=\s*")([^"]+)(")"#).unwrap();
-                let replaced = dep_version_re
+                let replaced = CARGO_DEP_VERSION_RE
                     .replace(after_eq, |caps: &regex::Captures| {
                         format!("{}{}{}", &caps[1], new_version, &caps[3])
                     })

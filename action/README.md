@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: kinyoklion/synthase@v0
+      - uses: kinyoklion/synthase/action@v0
         id: release
 
   # Build and upload artifacts only when a release is created
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: kinyoklion/synthase@v0
+      - uses: kinyoklion/synthase/action@v0
         with:
           command: publish
           tag-name: ${{ needs.release.outputs.tag_name }}

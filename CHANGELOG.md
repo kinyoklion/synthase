@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.2](https://github.com/kinyoklion/synthase/compare/synthase-v0.9.1...synthase-v0.9.2) (2026-06-27)
+
+### Bug Fixes
+
+* honor include-component-in-tag when creating release tags (#21) ([#21](https://github.com/kinyoklion/synthase/issues/21)) ([#44](https://github.com/kinyoklion/synthase/issues/44))
+
 ## [0.9.1](https://github.com/kinyoklion/synthase/compare/synthase-v0.9.0...synthase-v0.9.1) (2026-05-06)
 
 ### Bug Fixes

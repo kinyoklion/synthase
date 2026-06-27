@@ -14,6 +14,10 @@
 #   GITHUB_OUTPUT   — path to the GitHub Actions output file
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/tag.sh
+source "$SCRIPT_DIR/lib/tag.sh"
+
 # ---------------------------------------------------------------------------
 # 1. Find merged release PRs
 # ---------------------------------------------------------------------------
@@ -59,33 +63,6 @@ fi
 
 FIRST_TAG=""
 FIRST_VERSION=""
-
-# ---------------------------------------------------------------------------
-# Helper: build tag name from component, version, and config
-# ---------------------------------------------------------------------------
-build_tag() {
-  local component="$1"
-  local version="$2"
-  local tag
-  if [ -n "$component" ]; then
-    tag="${component}-v${version}"
-  else
-    tag="v${version}"
-  fi
-  if [ -f "$CONFIG_FILE" ]; then
-    local include_v tag_sep
-    include_v=$(jq -r '."include-v-in-tag" // true' "$CONFIG_FILE")
-    tag_sep=$(jq -r '."tag-separator" // "-"' "$CONFIG_FILE")
-    if [ "$include_v" = "false" ]; then
-      if [ -n "$component" ]; then
-        tag="${component}${tag_sep}${version}"
-      else
-        tag="${version}"
-      fi
-    fi
-  fi
-  echo "$tag"
-}
 
 # ---------------------------------------------------------------------------
 # Helper: create one GitHub release for a component+version

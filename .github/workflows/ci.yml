@@ -40,3 +40,6 @@ jobs:
 
       - name: Test
         run: cargo test --all
+
+      - name: Action script tests
+        run: bash action/scripts/lib/tag_test.sh
